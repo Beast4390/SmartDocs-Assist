@@ -1,0 +1,6 @@
+{
+  "name": "SmartDocs Assistant",
+  "description": "An Offline Enterprise AI Knowledge Intelligence Platform for processing, searching, comparing, and chatting with local documents using Ollama LLMs.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

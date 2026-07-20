@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="animated-fade-in">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold tracking-tight mb-1">Document Reader & Viewer</h2>
+      <p class="text-secondary mb-0">Inspecting securely extracted text nodes and technical metadata completely offline.</p>
+    </div>
+    <div>
+      <a href="/upload" class="btn btn-outline-primary d-flex align-items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg> Back to Library
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: File Metadata & Stats -->
+    <div class="col-12 col-lg-4">
+      <div class="card glass-panel p-4 mb-4">
+        <h5 class="fw-bold mb-3">File Information</h5>
+        
+        <table class="table table-sm table-borderless align-middle text-sm mb-4">
+          <tbody>
+            <tr>
+              <td class="text-muted py-2" style="width: 40%;">Original File:</td>
+              <td class="fw-medium text-end py-2 text-truncate" style="max-width: 180px;" title="{{ metadata.original_filename }}">{{ metadata.original_filename }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted py-2">System Path:</td>
+              <td class="font-mono text-xs text-end py-2 text-truncate" style="max-width: 180px;" title="{{ metadata.filename }}">{{ metadata.filename }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted py-2">Extension:</td>
+              <td class="text-end py-2"><span class="badge bg-secondary-subtle text-secondary">{{ metadata.extension }}</span></td>
+            </tr>
+            <tr>
+              <td class="text-muted py-2">Upload Date:</td>
+              <td class="text-end py-2 font-mono text-xs">{{ metadata.upload_date }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted py-2">File Size:</td>
+              <td class="text-end py-2 fw-medium">
+                {% if metadata.file_size >= 1048576 %}
+                  {{ "%.2f"|format(metadata.file_size / 1048576) }} MB
+                {% else %}
+                  {{ "%.1f"|format(metadata.file_size / 1024) }} KB
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted py-2">Pages/Slides:</td>
+              <td class="text-end py-2 fw-bold text-primary">{{ metadata.pages }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted py-2">Word Count:</td>
+              <td class="text-end py-2">{{ "{:,}".format(metadata.words) }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted py-2">Character Count:</td>
+              <td class="text-end py-2">{{ "{:,}".format(metadata.characters) }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted py-2">Pipeline Status:</td>
+              <td class="text-end py-2">
+                {% if metadata.status == 'embedded' %}
+                  <span class="badge bg-success-subtle text-success py-1 px-2 fw-medium">embedded</span>
+                {% else %}
+                  <span class="badge bg-warning-subtle text-warning py-1 px-2 fw-medium">{{ metadata.status }}</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted py-2">FAISS Index Status:</td>
+              <td class="text-end py-2">
+                {% if metadata.status == 'embedded' %}
+                  <span class="badge bg-success text-white py-1 px-2 fw-medium">Active / Synchronized</span>
+                {% else %}
+                  <span class="badge bg-secondary-subtle text-secondary py-1 px-2 fw-medium">Not Indexed</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted py-2">Vector Count:</td>
+              <td class="text-end py-2 fw-bold text-success">{{ chunks|length }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted py-2">Chunks Indexed:</td>
+              <td class="text-end py-2 fw-bold text-info">{{ chunks|length }}</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div class="border-top pt-3">
+          <h6 class="fw-bold text-xs text-uppercase tracking-wider text-muted mb-2">Raw Metadata (JSON)</h6>
+          <pre class="font-mono text-xs bg-light-subtle p-3 rounded border mb-0 text-secondary overflow-auto" style="max-height: 250px;">{{ json_dump }}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Extracted Content Viewer -->
+    <div class="col-12 col-lg-8">
+      <div class="card glass-panel p-4 h-100 d-flex flex-column" style="min-height: 600px;">
+        <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-4">
+          <h5 class="fw-bold mb-0">Offline Document Intelligence Viewer</h5>
+          <span class="text-xs text-muted">UTF-8 Normalized</span>
+        </div>
+
+        <ul class="nav nav-tabs mb-4" id="viewer-tabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold text-xs text-uppercase tracking-wider py-2 px-3 border-bottom-0" id="raw-text-tab" data-bs-toggle="tab" data-bs-target="#raw-text-content" type="button" role="tab" aria-controls="raw-text-content" aria-selected="true">Full Document Text</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold text-xs text-uppercase tracking-wider py-2 px-3 border-bottom-0" id="chunks-tab" data-bs-toggle="tab" data-bs-target="#chunks-content" type="button" role="tab" aria-controls="chunks-content" aria-selected="false">
+              Semantic Chunks 
+              {% if chunks %}
+                <span class="badge bg-primary ms-1" style="font-size: 0.7rem;">{{ chunks|length }}</span>
+              {% else %}
+                <span class="badge bg-secondary ms-1" style="font-size: 0.7rem;">0</span>
+              {% endif %}
+            </button>
+          </li>
+        </ul>
+        
+        <div class="tab-content flex-grow-1 overflow-auto" id="viewer-tabs-content">
+          <!-- Tab 1: Full Document Text -->
+          <div class="tab-pane fade show active bg-white p-4 rounded border" id="raw-text-content" role="tabpanel" aria-labelledby="raw-text-tab" style="max-height: 650px; font-family: 'Inter', sans-serif; font-size: 0.95rem; line-height: 1.7; color: var(--text-color);">
+            <div style="white-space: pre-wrap;">{{ extracted_text }}</div>
+          </div>
+
+          <!-- Tab 2: Chunk List -->
+          <div class="tab-pane fade" id="chunks-content" role="tabpanel" aria-labelledby="chunks-tab" style="max-height: 650px;">
+            {% if chunks %}
+              <div class="d-flex flex-column gap-3">
+                {% for chunk in chunks %}
+                  <div class="p-3 border rounded bg-light-subtle">
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom flex-wrap gap-2">
+                      <div>
+                        <span class="badge bg-primary-subtle text-primary fw-bold font-mono">Chunk {{ chunk.chunk_number }}</span>
+                        <span class="text-xs text-muted ms-2 font-mono d-none d-sm-inline">ID: {{ chunk.chunk_id }}</span>
+                      </div>
+                      <div class="d-flex gap-2 align-items-center">
+                        <span class="text-xs text-secondary font-mono">{{ chunk.word_count }} words • {{ chunk.character_count }} chars</span>
+                        <span class="badge bg-success-subtle text-success">embedded</span>
+                      </div>
+                    </div>
+                    <div class="text-secondary" style="font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap;">{{ chunk.text }}</div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="text-center py-5 text-muted border rounded bg-light-subtle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mb-3 text-secondary opacity-50"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                <p class="mb-0">No chunks or vector embeddings found for this document on this node.</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

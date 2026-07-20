@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .chat-bubble {
+    max-width: 80%;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    animation: fadeIn 0.25s ease;
+  }
+  .chat-bubble.user {
+    background-color: var(--primary-color, #0d6efd);
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 2px;
+  }
+  .chat-bubble.assistant {
+    background-color: white;
+    color: var(--text-color, #212529);
+    margin-right: auto;
+    border-bottom-left-radius: 2px;
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  }
+  .action-btn {
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    cursor: pointer;
+  }
+  .action-btn:hover {
+    opacity: 1;
+    color: var(--primary-color);
+  }
+  .citation-link {
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  .citation-link:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+  .pulse-dot {
+    width: 6px;
+    height: 6px;
+    background-color: currentColor;
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse-dot 1.2s infinite ease-in-out;
+  }
+  .pulse-dot:nth-child(2) { animation-delay: 0.2s; }
+  .pulse-dot:nth-child(3) { animation-delay: 0.4s; }
+</style>
+
+<div class="animated-fade-in">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+      <h2 class="fw-bold tracking-tight mb-1">Local AI RAG Assistant</h2>
+      <p class="text-secondary mb-0">Query corporate facts offline with Ollama generative LLM parameters.</p>
+    </div>
+    
+    <!-- Controls next to model selection -->
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+      <!-- Clear Chat Button -->
+      <button class="btn btn-sm btn-outline-danger px-3 fw-medium d-flex align-items-center gap-1" id="clear-chat-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+        Clear History
+      </button>
+
+      <!-- Top-K selector -->
+      <div style="width: 130px;">
+        <select class="form-select form-select-sm bg-white" id="chat-top-k-select" title="Top-K context chunks limit">
+          <option value="3">Top 3 Chunks</option>
+          <option value="5" selected>Top 5 Chunks</option>
+          <option value="10">Top 10 Chunks</option>
+          <option value="15">Top 15 Chunks</option>
+          <option value="20">Top 20 Chunks</option>
+        </select>
+      </div>
+
+      <!-- Model selection dropdown -->
+      <div style="min-width: 150px;">
+        <select class="form-select form-select-sm bg-white fw-medium" id="chat-model-select" title="Active Generative Model">
+          <option value="llama3">LLAMA 3 (8B)</option>
+          <option value="qwen3">QWEN 3 (7B)</option>
+          <option value="mistral">MISTRAL (7B)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12 col-lg-9">
+      <div class="card glass-panel chat-window p-0 overflow-hidden d-flex flex-column" style="height: 60vh; min-height: 500px;">
+        <!-- Scrollable Chat Bubble Area -->
+        <div class="chat-history p-4 flex-grow-1 overflow-y-auto" id="chat-history" style="background-color: var(--light-bg, #f8f9fa);">
+          <div class="chat-bubble assistant">
+            <div style="font-size: 0.95rem;">
+              Hello! I am your 100% offline <strong>SmartDocs Assistant</strong>. 
+              Ask me anything about your uploaded corporate documents. I will retrieve context 
+              from your FAISS local vector indices before formulating a synthesized response.
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Input Bar -->
+        <div class="p-3 bg-white border-top">
+          <form id="chat-form">
+            <div class="input-group">
+              <button class="btn btn-outline-secondary px-3 d-flex align-items-center justify-content-center" type="button" id="chat-voice-btn" title="Speak Query (Whisper)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="chat-voice-icon" class="text-danger"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+              </button>
+              <input type="text" id="chat-input" class="form-control bg-white shadow-none border" placeholder="Ask a factual question about your corporate documents..." autocomplete="off" required>
+              <button class="btn btn-primary px-4 fw-medium" type="submit">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="me-1"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                Ask Assistant
+              </button>
+            </div>
+            
+            <!-- Voice assistant helper inline feedback -->
+            <div class="justify-content-between align-items-center mt-2 px-1" id="chat-voice-feedback-row" style="display: none !important;">
+              <small class="text-xs text-muted d-flex align-items-center gap-1">
+                <span class="spinner-grow spinner-grow-sm text-danger" id="chat-voice-spinner" role="status" style="width: 8px; height: 8px; display: none;"></span>
+                <span id="chat-voice-status-text">Recording active... Speak clearly.</span>
+              </small>
+              <div class="d-flex gap-2">
+                <button class="btn btn-link text-xxs text-decoration-none text-muted p-0" type="button" id="chat-voice-copy-btn">Copy Transcript</button>
+                <span class="text-muted text-xxs">|</span>
+                <button class="btn btn-link text-xxs text-decoration-none text-muted p-0" type="button" id="chat-voice-replay-btn">Replay Last</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Prompt Suggestions Sidebar -->
+    <div class="col-12 col-lg-3">
+      <div class="card glass-panel p-4 h-100 d-flex flex-column">
+        <h6 class="fw-bold text-xs text-uppercase tracking-wider text-muted mb-3">Enterprise Shortcuts</h6>
+        
+        <div class="list-group list-group-flush gap-2 flex-grow-1">
+          <button class="btn btn-sm btn-outline-secondary text-start p-3 rounded" onclick="document.getElementById('chat-input').value = 'Summarize our corporate security policy.';">
+            <div class="fw-bold text-xs mb-1">Security Policy</div>
+            <span class="text-xs text-muted" style="font-size: 0.7rem;">Request bullet-point summarization.</span>
+          </button>
+          
+          <button class="btn btn-sm btn-outline-secondary text-start p-3 rounded" onclick="document.getElementById('chat-input').value = 'Is our server configured with hardware accelerators?';">
+            <div class="fw-bold text-xs mb-1">Server Specifications</div>
+            <span class="text-xs text-muted" style="font-size: 0.7rem;">Query hardware topology.</span>
+          </button>
+
+          <button class="btn btn-sm btn-outline-secondary text-start p-3 rounded" onclick="document.getElementById('chat-input').value = 'What is the corporate leave policy?';">
+            <div class="fw-bold text-xs mb-1">Leave Guidelines</div>
+            <span class="text-xs text-muted" style="font-size: 0.7rem;">Retrieve regulatory guidelines.</span>
+          </button>
+        </div>
+        
+        <div class="mt-4 p-3 border rounded bg-light-subtle text-xxs text-secondary">
+          <div class="fw-bold text-dark mb-1 d-flex align-items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-success"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Strict Factual Integrity
+          </div>
+          Answers are strictly compiled using context passages in the local FAISS index. Hallucinations are mathematically guarded.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const voiceBtn = document.getElementById('chat-voice-btn');
+    const voiceIcon = document.getElementById('chat-voice-icon');
+    const chatInput = document.getElementById('chat-input');
+    const feedbackRow = document.getElementById('chat-voice-feedback-row');
+    const spinner = document.getElementById('chat-voice-spinner');
+    const statusText = document.getElementById('chat-voice-status-text');
+    const copyBtn = document.getElementById('chat-voice-copy-btn');
+    const replayBtn = document.getElementById('chat-voice-replay-btn');
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let lastTranscript = "";
+
+    voiceBtn.addEventListener('click', async () => {
+      if (!isRecording) {
+        // Start recording
+        audioChunks = [];
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+          };
+          mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            await transcribeAudio(audioBlob);
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          
+          // Update UI
+          voiceBtn.className = 'btn btn-danger px-3 d-flex align-items-center justify-content-center';
+          voiceIcon.style.color = '#ffffff';
+          feedbackRow.style.display = 'flex';
+          feedbackRow.style.setProperty('display', 'flex', 'important');
+          spinner.style.display = 'inline-block';
+          statusText.textContent = 'Listening to your microphone... Click MIC button again to transcribing.';
+          showToast("Recording started...", "info");
+        } catch (err) {
+          console.error("Mic access denied:", err);
+          showToast("Failed to access microphone. Check browser permissions.", "error");
+        }
+      } else {
+        // Stop recording
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+          mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+        isRecording = false;
+        
+        // Update UI
+        voiceBtn.className = 'btn btn-outline-secondary px-3 d-flex align-items-center justify-content-center';
+        voiceIcon.style.color = '';
+        spinner.style.display = 'inline-block';
+        statusText.textContent = 'Processing with local Whisper-Tiny model...';
+      }
+    });
+
+    async function transcribeAudio(blob) {
+      const formData = new FormData();
+      formData.append('file', blob, 'chat_input.wav');
+      formData.append('target_language', 'English'); // Transcribe to english for standard chat
+
+      try {
+        const res = await fetch('/api/voice', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        
+        if (data.success && data.transcript) {
+          lastTranscript = data.transcript;
+          chatInput.value = data.transcript;
+          statusText.textContent = `Speech transcribed completely! Click submit to send.`;
+          spinner.style.display = 'none';
+          showToast("Voice transcribed completely offline!", "success");
+        } else {
+          statusText.textContent = `STT Failed: ${data.error || 'No speech detected'}`;
+          spinner.style.display = 'none';
+          showToast("Whisper could not detect speech. Please try again.", "warning");
+        }
+      } catch (err) {
+        console.error("Transcribe error:", err);
+        statusText.textContent = "Error connecting to local Whisper engine.";
+        spinner.style.display = 'none';
+      }
+    }
+
+    copyBtn.addEventListener('click', () => {
+      const txt = chatInput.value.trim();
+      if (txt) {
+        navigator.clipboard.writeText(txt)
+          .then(() => showToast("Speech transcript copied!", "success"))
+          .catch(() => showToast("Copy failed.", "error"));
+      } else {
+        showToast("Transcript is empty.", "warning");
+      }
+    });
+
+    replayBtn.addEventListener('click', () => {
+      if (lastTranscript) {
+        chatInput.value = lastTranscript;
+        showToast("Last spoken query loaded.", "success");
+      } else {
+        showToast("No spoken history available.", "warning");
+      }
+    });
+  });
+</script>
+{% endblock %}

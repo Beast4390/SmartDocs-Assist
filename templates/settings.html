@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="animated-fade-in">
+  <div class="mb-4">
+    <h2 class="fw-bold tracking-tight mb-1">Local Node Settings</h2>
+    <p class="text-secondary mb-0">Configure local model parameters, server pathways, and system operational boundaries.</p>
+  </div>
+
+  <div class="row g-4">
+    <!-- Form column -->
+    <div class="col-12 col-lg-8">
+      <div class="card glass-panel p-4">
+        <h5 class="fw-bold mb-4">Configuration Profile</h5>
+        
+        <form id="settings-form">
+          <!-- Ollama API Pathway -->
+          <div class="mb-4">
+            <label class="form-label text-sm fw-bold text-secondary" for="ollama-url">Local Ollama URL Connection</label>
+            <input type="text" id="ollama-url" class="form-control" required placeholder="http://localhost:11434">
+            <div class="form-text text-xs text-muted">SmartDocs connects directly to this address to query LLMs and fetch weights.</div>
+          </div>
+
+          <!-- Active Generative Model Selection -->
+          <div class="mb-4">
+            <label class="form-label text-sm fw-bold text-secondary" for="default-model-select">Active Generative Model (Ollama)</label>
+            <select class="form-select" id="default-model-select">
+              <option value="llama3">LLAMA 3 (8B) - Default Choice</option>
+              <option value="qwen3">QWEN 3 (7B)</option>
+              <option value="mistral">MISTRAL (7B)</option>
+            </select>
+            <div class="form-text text-xs text-muted">Select which local generative model acts as the primary synthesizer of query outputs.</div>
+          </div>
+
+          <!-- Active Embedding model selection -->
+          <div class="mb-4">
+            <label class="form-label text-sm fw-bold text-secondary" for="embedding-model-select">Active Embedding Model (Sentence Transformers)</label>
+            <select class="form-select" id="embedding-model-select">
+              <option value="all-minilm">ALL-MINILM-L6-V2 (384 Dimensions)</option>
+              <option value="nomic">NOMIC-EMBED-TEXT (768 Dimensions)</option>
+            </select>
+            <div class="form-text text-xs text-muted">Defines vector length calculated during document uploads. Changing models requires reindexing files.</div>
+          </div>
+
+          <!-- RAG Generation Hyperparameters -->
+          <h6 class="fw-bold mb-3 text-primary border-bottom pb-2">RAG & Model Parameters</h6>
+
+          <div class="row mb-4">
+            <div class="col-12 col-md-6 mb-3 mb-md-0">
+              <label class="form-label text-sm fw-bold text-secondary" for="settings-temperature">Model Temperature</label>
+              <div class="d-flex align-items-center gap-3">
+                <input type="range" id="settings-temperature" class="form-range" min="0" max="100" value="70">
+                <span id="temp-badge" class="badge bg-secondary-subtle text-secondary font-mono">0.70</span>
+              </div>
+              <div class="form-text text-xs text-muted">Lower values are more factual, higher are more creative.</div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label text-sm fw-bold text-secondary" for="settings-top-k">Top-K Retrieval Limit</label>
+              <select class="form-select" id="settings-top-k">
+                <option value="3">Top 3 Chunks</option>
+                <option value="5" selected>Top 5 Chunks (Default)</option>
+                <option value="10">Top 10 Chunks</option>
+                <option value="15">Top 15 Chunks</option>
+                <option value="20">Top 20 Chunks</option>
+              </select>
+              <div class="form-text text-xs text-muted">Number of context snippets retrieved from FAISS.</div>
+            </div>
+          </div>
+
+          <div class="row mb-4">
+            <div class="col-12 col-md-6 mb-3 mb-md-0">
+              <label class="form-label text-sm fw-bold text-secondary" for="settings-max-tokens">Max Generation Tokens</label>
+              <input type="number" id="settings-max-tokens" class="form-control" min="64" max="4096" step="64" value="512">
+              <div class="form-text text-xs text-muted">Maximum output length permitted for generated answers.</div>
+            </div>
+
+            <div class="col-12 col-md-6 d-flex flex-column justify-content-center">
+              <div class="form-check form-switch pt-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="settings-streaming" checked>
+                <label class="form-check-label text-sm fw-bold text-secondary" for="settings-streaming">Enable Token Streaming</label>
+                <div class="form-text text-xs text-muted">Stream tokens to the chat progressively as they generate.</div>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary px-4 py-2" type="submit">
+            Save System Parameters
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Info column -->
+    <div class="col-12 col-lg-4">
+      <div class="card glass-panel p-4">
+        <h5 class="fw-bold mb-3">Model Repository</h5>
+        <p class="text-xs text-secondary mb-4">Ollama houses weights offline inside your user directories. Ensure these models are pulled before configuring.</p>
+        
+        <div class="list-group list-group-flush gap-3 text-xs">
+          <div class="p-3 border rounded bg-light-subtle">
+            <div class="fw-bold text-primary mb-1">To Pull LLAMA 3:</div>
+            <code class="d-block text-secondary">ollama pull llama3</code>
+          </div>
+
+          <div class="p-3 border rounded bg-light-subtle">
+            <div class="fw-bold text-primary mb-1">To Pull QWEN 3:</div>
+            <code class="d-block text-secondary">ollama pull qwen</code>
+          </div>
+
+          <div class="p-3 border rounded bg-light-subtle">
+            <div class="fw-bold text-primary mb-1">To Pull MISTRAL:</div>
+            <code class="d-block text-secondary">ollama pull mistral</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

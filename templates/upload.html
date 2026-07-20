@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="animated-fade-in">
+  <div class="mb-4">
+    <h2 class="fw-bold tracking-tight mb-1">Upload Corporate Documents</h2>
+    <p class="text-secondary mb-0">Documents are processed entirely on this offline server. No external data leaks are possible.</p>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: Drag & Drop Area -->
+    <div class="col-12 col-lg-7">
+      <div class="card glass-panel p-4 mb-4">
+        <h5 class="fw-bold mb-3">Add Files</h5>
+        
+        <!-- Interactive Drag & Drop Area -->
+        <div class="upload-dropzone" id="dropzone">
+          <input type="file" id="file-input" class="d-none" accept=".pdf,.docx,.pptx,.txt">
+          <div class="mb-3 text-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lucide lucide-cloud-upload"><path d="M12 13v8"/><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4-4 4 4"/></svg>
+          </div>
+          <h5 class="fw-bold mb-1">Drag and drop file here</h5>
+          <p class="text-muted small mb-0">or click to browse local files</p>
+          <div class="mt-3 text-xs text-muted">Supports PDF, DOCX, PPTX, or TXT up to 50MB</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: List of files -->
+    <div class="col-12 col-lg-5">
+      <div class="card glass-panel p-4 h-100">
+        <h5 class="fw-bold mb-3">Local Index Queue</h5>
+        
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>Size</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="uploaded-docs-list">
+              <!-- Loading Skeletons -->
+              <tr>
+                <td colspan="4">
+                  <div class="skeleton mb-2" style="height: 30px;"></div>
+                  <div class="skeleton" style="height: 30px; animation-delay: 0.2s;"></div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

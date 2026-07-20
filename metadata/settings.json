@@ -1,0 +1,8 @@
+{
+    "ollama_url": "http://localhost:11434",
+    "current_model": "llama3",
+    "temperature": 0.7,
+    "top_k": 5,
+    "max_tokens": 512,
+    "streaming": true
+}

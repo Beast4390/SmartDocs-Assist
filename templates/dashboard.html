@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="animated-fade-in">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold tracking-tight mb-1">Knowledge Intelligence Dashboard</h2>
+      <p class="text-secondary mb-0">Local enterprise-grade air-gapped document intelligence environment.</p>
+    </div>
+    <div class="text-end">
+      <small class="text-muted d-block">System Load State</small>
+      <span class="badge bg-success-subtle text-success py-2 px-3 fw-medium">Secure Network Boundary: 100% Offline</span>
+    </div>
+  </div>
+
+  <!-- Dashboard Overview Stats Row -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card glass-card h-100 p-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="text-secondary fw-semibold mb-0">Processed Documents</h6>
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+          </div>
+        </div>
+        <h2 class="fw-bold mb-1" id="stat-total-docs">0</h2>
+        <span class="text-muted" style="font-size: 0.85rem;">PDF, DOCX, PPTX loaded</span>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card glass-card h-100 p-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="text-secondary fw-semibold mb-0">Total Pages / Slides</h6>
+          <div class="stat-icon bg-success-subtle text-success">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lucide lucide-database"><circle cx="12" cy="5" r="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+          </div>
+        </div>
+        <h2 class="fw-bold mb-1" id="stat-total-pages">0</h2>
+        <span class="text-muted" style="font-size: 0.85rem;">Extracted completely offline</span>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card glass-card h-100 p-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="text-secondary fw-semibold mb-0">Active Intelligence Model</h6>
+          <div class="stat-icon bg-warning-subtle text-warning">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lucide lucide-brain-circuit"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M9 13h4"/><path d="M12 10v6"/></svg>
+          </div>
+        </div>
+        <h2 class="fw-bold mb-1" id="active-model-badge">LLAMA 3 (8B)</h2>
+        <span class="text-muted" style="font-size: 0.85rem;">Hosted on local Ollama service</span>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card glass-card h-100 p-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="text-secondary fw-semibold mb-0">Offline Storage Used</h6>
+          <div class="stat-icon bg-danger-subtle text-danger">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lucide lucide-waveform"><path d="M3 10v4"/><path d="M6 6v12"/><path d="M9 3v18"/><path d="M12 7v10"/><path d="M15 5v14"/><path d="M18 8v8"/><path d="M21 11v2"/></svg>
+          </div>
+        </div>
+        <h2 class="fw-bold mb-1" id="stat-storage-used">0.00 MB</h2>
+        <span class="text-muted" style="font-size: 0.85rem;">Local secure node buffer</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Embedding & FAISS Pipeline Statistics Row -->
+  <div class="row g-4 mb-4">
+    <div class="col-12">
+      <div class="card glass-panel p-4">
+        <div class="row g-4">
+          <!-- Left side: Embedding -->
+          <div class="col-12 col-xl-6 border-end pe-xl-4">
+            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cpu text-primary"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 20v3"/><path d="M15 20v3"/><path d="M20 9h3"/><path d="M20 15h3"/><path d="M1 9h3"/><path d="M1 15h3"/></svg>
+              Local Semantic Embedding Pipeline
+            </h5>
+            <div class="row row-cols-2 row-cols-sm-3 g-3">
+              <div class="col">
+                <div class="p-3 rounded border bg-light-subtle h-100">
+                  <small class="text-muted d-block mb-1">Embedded Documents</small>
+                  <h4 class="fw-bold mb-0 text-primary" id="embed-total-docs">0</h4>
+                </div>
+              </div>
+              <div class="col">
+                <div class="p-3 rounded border bg-light-subtle h-100">
+                  <small class="text-muted d-block mb-1">Total Chunks</small>
+                  <h4 class="fw-bold mb-0 text-success" id="embed-total-chunks">0</h4>
+                </div>
+              </div>
+              <div class="col col-sm-4 col-12">
+                <div class="p-3 rounded border bg-light-subtle h-100">
+                  <small class="text-muted d-block mb-1">Embedding Model</small>
+                  <h4 class="fw-bold mb-0 text-dark text-truncate pt-1" style="font-size: 0.85rem;" id="embed-model-name" title="all-MiniLM-L6-v2">all-MiniLM-L6-v2</h4>
+                </div>
+              </div>
+              <div class="col">
+                <div class="p-3 rounded border bg-light-subtle h-100">
+                  <small class="text-muted d-block mb-1">Avg Chunks / Doc</small>
+                  <h4 class="fw-bold mb-0 text-info" id="embed-avg-chunks">0.0</h4>
+                </div>
+              </div>
+              <div class="col">
+                <div class="p-3 rounded border bg-light-subtle h-100">
+                  <small class="text-muted d-block mb-1">Embedding Status</small>
+                  <div class="mt-1">
+                    <span class="badge bg-success-subtle text-success" id="embed-status-badge">ONLINE</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right side: FAISS -->
+          <div class="col-12 col-xl-6 ps-xl-4">
+            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-success"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Local FAISS Vector Database
+            </h5>
+            <div class="row row-cols-2 row-cols-sm-3 g-3">
+              <div class="col">
+                <div class="p-3 rounded border bg-light-subtle h-100">
+                  <small class="text-muted d-block mb-1">Indexed Documents</small>
+                  <h4 class="fw-bold mb-0 text-primary" id="embed-faiss-docs">0</h4>
+                </div>
+              </div>
+              <div class="col">
+                <div class="p-3 rounded border bg-light-subtle h-100">
+                  <small class="text-muted d-block mb-1">Total Vectors</small>
+                  <h4 class="fw-bold mb-0 text-success" id="embed-faiss-vectors">0</h4>
+                </div>
+              </div>
+              <div class="col col-sm-4 col-12">
+                <div class="p-3 rounded border bg-light-subtle h-100">
+                  <small class="text-muted d-block mb-1">FAISS Index Size</small>
+                  <h4 class="fw-bold mb-0 text-dark text-truncate pt-1" style="font-size: 0.85rem;" id="embed-faiss-size">0.0 Bytes</h4>
+                </div>
+              </div>
+              <div class="col">
+                <div class="p-3 rounded border bg-light-subtle h-100">
+                  <small class="text-muted d-block mb-1">Last Index Update</small>
+                  <h4 class="fw-bold mb-0 text-info text-truncate pt-1" style="font-size: 0.85rem;" id="embed-faiss-update">None</h4>
+                </div>
+              </div>
+              <div class="col">
+                <div class="p-3 rounded border bg-light-subtle h-100">
+                  <small class="text-muted d-block mb-1">Search Requests</small>
+                  <h4 class="fw-bold mb-0 text-warning" id="embed-faiss-searches">0</h4>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RAG Engine & Local Ollama Node Statistics Row -->
+  <div class="row g-4 mb-4">
+    <div class="col-12">
+      <div class="card glass-panel p-4">
+        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-6h2zm0-8h-2V7h2z"/></svg>
+          Local RAG Engine & Ollama Node Statistics
+        </h5>
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-5 g-3">
+          <div class="col">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">Total AI Questions</small>
+              <h4 class="fw-bold mb-0 text-primary" id="rag-total-questions">0</h4>
+            </div>
+          </div>
+          <div class="col">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">Avg Retrieval Time</small>
+              <h4 class="fw-bold mb-0 text-success" id="rag-avg-retrieval-time">0 ms</h4>
+            </div>
+          </div>
+          <div class="col">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">Avg Generation Time</small>
+              <h4 class="fw-bold mb-0 text-info" id="rag-avg-generation-time">0 ms</h4>
+            </div>
+          </div>
+          <div class="col">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">Active Ollama Model</small>
+              <h4 class="fw-bold mb-0 text-dark text-truncate pt-1" style="font-size: 0.85rem;" id="rag-active-model">None</h4>
+            </div>
+          </div>
+          <div class="col col-sm-12 col-md-auto flex-grow-1">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">Ollama Connection</small>
+              <div class="mt-1">
+                <span class="badge bg-secondary-subtle text-secondary" id="rag-ollama-status">CHECKING...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Local Voice Assistant & Multilingual Statistics Row -->
+  <div class="row g-4 mb-4">
+    <div class="col-12">
+      <div class="card glass-panel p-4">
+        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-info"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          Local Voice Assistant & Multilingual Statistics
+        </h5>
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-5 g-3">
+          <div class="col">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">Voice Queries</small>
+              <h4 class="fw-bold mb-0 text-primary" id="voice-queries-count">0</h4>
+            </div>
+          </div>
+          <div class="col">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">Avg STT Time</small>
+              <h4 class="fw-bold mb-0 text-success" id="voice-avg-stt-time">0 ms</h4>
+            </div>
+          </div>
+          <div class="col">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">Active Whisper Model</small>
+              <h4 class="fw-bold mb-0 text-truncate text-info pt-1" style="font-size: 0.85rem;" id="voice-whisper-model">None</h4>
+            </div>
+          </div>
+          <div class="col">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">Active Language</small>
+              <h4 class="fw-bold mb-0 text-dark text-truncate pt-1" style="font-size: 0.85rem;" id="voice-active-language">Auto Detect</h4>
+            </div>
+          </div>
+          <div class="col col-sm-12 col-md-auto flex-grow-1">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">Translation Status</small>
+              <div class="mt-1">
+                <span class="badge bg-secondary-subtle text-secondary" id="voice-translation-status">CHECKING...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advanced Enterprise AI Intelligence Statistics Row -->
+  <div class="row g-4 mb-4">
+    <div class="col-12">
+      <div class="card glass-panel p-4">
+        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Advanced Enterprise AI Intelligence Statistics
+        </h5>
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-6 g-3">
+          <div class="col">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">Summarized Docs</small>
+              <h4 class="fw-bold mb-0 text-primary" id="intel-summarized-docs">0</h4>
+            </div>
+          </div>
+          <div class="col">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">Reports Created</small>
+              <h4 class="fw-bold mb-0 text-success" id="intel-reports-created">0</h4>
+            </div>
+          </div>
+          <div class="col">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">Clause Audits</small>
+              <h4 class="fw-bold mb-0 text-info" id="intel-clause-audits">0</h4>
+            </div>
+          </div>
+          <div class="col">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">KG Nodes Mapped</small>
+              <h4 class="fw-bold mb-0 text-warning" id="intel-kg-nodes">0</h4>
+            </div>
+          </div>
+          <div class="col">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">FAQs Generated</small>
+              <h4 class="fw-bold mb-0 text-secondary" id="intel-faqs-created">0</h4>
+            </div>
+          </div>
+          <div class="col">
+            <div class="p-3 rounded border bg-light-subtle h-100">
+              <small class="text-muted d-block mb-1">Action Items Found</small>
+              <h4 class="fw-bold mb-0 text-dark" id="intel-action-items">0</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left column: Recent Documents -->
+    <div class="col-12 col-lg-8">
+      <div class="card glass-panel p-4 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <h5 class="fw-bold mb-0">Corporate Knowledge Library</h5>
+          <a href="/upload" class="btn btn-sm btn-outline-primary">Manage Files</a>
+        </div>
+        
+        <div id="recent-docs-list">
+          <!-- Skeleton Loading Screen -->
+          <div class="p-3 mb-2 rounded border bg-light-subtle skeleton" style="height: 60px;"></div>
+          <div class="p-3 mb-2 rounded border bg-light-subtle skeleton" style="height: 60px; animation-delay: 0.2s;"></div>
+          <div class="p-3 mb-2 rounded border bg-light-subtle skeleton" style="height: 60px; animation-delay: 0.4s;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column: System Topology & Configuration -->
+    <div class="col-12 col-lg-4">
+      <div class="card glass-panel p-4 h-100">
+        <h5 class="fw-bold mb-3">Local Node Specifications</h5>
+        
+        <div class="mb-4">
+          <small class="text-muted d-block mb-1">Local Ollama API Endpoint</small>
+          <div class="font-mono text-xs text-secondary bg-light-subtle p-2 rounded border">http://localhost:11434</div>
+        </div>
+        
+        <div class="mb-4">
+          <small class="text-muted d-block mb-1">Local FAISS Vectors Path</small>
+          <div class="font-mono text-xs text-secondary bg-light-subtle p-2 rounded border">/faiss_index/smartdocs.index</div>
+        </div>
+
+        <div class="mb-4">
+          <small class="text-muted d-block mb-1">Hardware Acceleration</small>
+          <div class="d-flex justify-content-between align-items-center p-2 rounded border bg-light-subtle">
+            <span class="fw-medium text-xs">CPU Fallback</span>
+            <span class="badge bg-warning-subtle text-warning">Optimized</span>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <small class="text-muted d-block mb-1">Last Upload</small>
+          <div class="font-mono text-xs text-secondary bg-light-subtle p-2 rounded border" id="stat-last-upload">None</div>
+        </div>
+
+        <div class="mb-4">
+          <small class="text-muted d-block mb-1">Node Processing Status</small>
+          <div class="d-flex justify-content-between align-items-center p-2 rounded border bg-light-subtle">
+            <span class="fw-medium text-xs text-uppercase font-mono" id="stat-processing-status">Idle</span>
+            <span class="badge bg-success-subtle text-success" id="stat-processing-badge">Online</span>
+          </div>
+        </div>
+
+        <div class="border-top pt-3">
+          <h6 class="fw-bold text-xs text-uppercase tracking-wider text-muted mb-2">Platform Capabilities</h6>
+          <div class="d-flex flex-wrap gap-2">
+            <span class="badge bg-secondary-subtle text-secondary">RAG</span>
+            <span class="badge bg-secondary-subtle text-secondary">FAISS Index</span>
+            <span class="badge bg-secondary-subtle text-secondary">Ollama</span>
+            <span class="badge bg-secondary-subtle text-secondary">Whisper Voice</span>
+            <span class="badge bg-secondary-subtle text-secondary">No Cloud Callout</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

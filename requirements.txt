@@ -1,0 +1,16 @@
+# SmartDocs Assistant – Phase 5: FAISS Vector Database & Semantic Search
+# Core enterprise dependencies required for web framework, proxying, logging, and embedding pipelines
+
+Flask==3.0.3
+werkzeug==3.0.3
+python-dotenv==1.0.1
+requests==2.32.3
+gunicorn==22.0.0
+pymupdf==1.24.4
+python-docx==1.1.2
+python-pptx==0.6.23
+sentence-transformers==3.0.1
+numpy==1.26.4
+faiss-cpu==1.8.0
+openai-whisper==20231117
+deep-translator==1.11.4

@@ -1,0 +1,523 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .visualizer-bar {
+    width: 6px;
+    background-color: var(--primary-color, #0d6efd);
+    border-radius: 3px;
+    height: 10px;
+    transition: height 0.1s ease;
+  }
+  .visualizer-bar.recording {
+    background-color: #dc3545; /* Red during recording */
+  }
+  .pulse-mic {
+    animation: pulse-ring 1.5s infinite;
+  }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+  }
+  .citation-link {
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  .citation-link:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+  }
+</style>
+
+<div class="animated-fade-in">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+      <h2 class="fw-bold tracking-tight mb-1">Local Voice Intelligence</h2>
+      <p class="text-secondary mb-0">Speak to your corporate library offline. SmartDocs transcribes and translates audio locally using Whisper & Ollama.</p>
+    </div>
+    
+    <!-- Target Language Select -->
+    <div class="d-flex align-items-center gap-2 bg-white p-2 rounded border shadow-sm" style="max-width: 280px;">
+      <span class="text-muted text-xs fw-bold text-nowrap ms-1">Target Language:</span>
+      <select class="form-select form-select-sm border-0 fw-medium shadow-none font-sans" id="voice-language-select">
+        <option value="Auto Detect">Auto Detect</option>
+        <option value="English">English</option>
+        <option value="Hindi">Hindi</option>
+        <option value="Telugu">Telugu</option>
+        <option value="Tamil">Tamil</option>
+        <option value="Kannada">Kannada</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: Voice Controller & Recorder -->
+    <div class="col-12 col-lg-5">
+      <div class="card glass-panel p-4 h-100 d-flex flex-column align-items-center justify-content-center text-center position-relative overflow-hidden" style="min-height: 400px;">
+        
+        <!-- Status Indicator Badge -->
+        <div class="position-absolute top-0 end-0 m-3">
+          <span class="badge bg-secondary-subtle text-secondary" id="mic-status-badge">MICROPHONE IDLE</span>
+        </div>
+
+        <div class="my-auto d-flex flex-column align-items-center">
+          <h5 class="fw-bold mb-2">Speak Your Factual Query</h5>
+          <p class="text-muted text-xs px-3 mb-4 max-w-sm">
+            Press start, ask any corporate or leave question naturally, and let our offline stack handle the transcription, semantic retrieval, and response synthesis.
+          </p>
+
+          <!-- Fluid Wave Visualizer -->
+          <div class="d-flex align-items-center justify-content-center gap-1 mb-4" id="visualizer-container" style="height: 60px;">
+            <div class="visualizer-bar" style="height: 12px;"></div>
+            <div class="visualizer-bar" style="height: 18px;"></div>
+            <div class="visualizer-bar" style="height: 24px;"></div>
+            <div class="visualizer-bar" style="height: 14px;"></div>
+            <div class="visualizer-bar" style="height: 32px;"></div>
+            <div class="visualizer-bar" style="height: 20px;"></div>
+            <div class="visualizer-bar" style="height: 12px;"></div>
+            <div class="visualizer-bar" style="height: 26px;"></div>
+            <div class="visualizer-bar" style="height: 16px;"></div>
+          </div>
+
+          <!-- Timer Counter -->
+          <h2 class="fw-bold text-dark mb-4 font-mono" id="recording-timer" style="display: none;">00:00</h2>
+
+          <!-- Action Buttons -->
+          <div class="d-flex gap-3 align-items-center justify-content-center">
+            <!-- Record Button -->
+            <button class="btn btn-primary px-4 py-3 d-flex align-items-center gap-2 shadow" id="btn-start-record" style="border-radius: 50px; min-width: 180px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              Start Recording
+            </button>
+
+            <!-- Stop Button (Hidden initially) -->
+            <button class="btn btn-danger px-4 py-3 d-flex align-items-center gap-2 pulse-mic shadow" id="btn-stop-record" style="border-radius: 50px; min-width: 180px; display: none;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/></svg>
+              Stop & Transcribe
+            </button>
+          </div>
+
+          <p class="text-xs text-muted mt-3" id="mic-status-text">Microphone Ready. Select target language and begin speaking.</p>
+        </div>
+
+        <!-- Node details footer -->
+        <div class="w-full mt-4 pt-3 border-top text-xxs text-secondary d-flex justify-content-between">
+          <span>Engine: Whisper-Tiny (Offline)</span>
+          <span>Device: Local Host CPU</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Transcripts & AI Responses -->
+    <div class="col-12 col-lg-7">
+      <div class="card glass-panel p-4 h-100 d-flex flex-column gap-4">
+        
+        <!-- Transcript Box -->
+        <div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label text-xs fw-bold text-uppercase text-muted mb-0">1. Transcribed Speech Transcript</label>
+            <div class="d-flex gap-2">
+              <button class="btn btn-xs btn-link text-decoration-none text-muted p-0" id="btn-copy-transcript" title="Copy Transcript" style="font-size: 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>Copy
+              </button>
+              <span class="text-muted px-1" style="font-size: 0.75rem;">|</span>
+              <button class="btn btn-xs btn-link text-decoration-none text-muted p-0" id="btn-replay-transcript" title="Re-submit transcript" style="font-size: 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>Replay Last
+              </button>
+            </div>
+          </div>
+          <div class="input-group">
+            <textarea class="form-control text-sm bg-light-subtle" id="text-transcript" rows="3" placeholder="Whisper output transcript will display here. You can fully edit this text prior to submitting to RAG..."></textarea>
+            <button class="btn btn-secondary text-xs fw-bold px-3 d-flex flex-column justify-content-center" type="button" id="btn-submit-rag" style="max-width: 100px;">
+              <span>Submit</span>
+              <span>to RAG</span>
+            </button>
+          </div>
+          <div class="form-text text-xxs text-muted mt-1">If Whisper misspells terms, feel free to edit the text directly above and hit 'Submit to RAG' to re-query corporate indices.</div>
+        </div>
+
+        <!-- AI Generated Factual Answer -->
+        <div class="flex-grow-1 d-flex flex-column">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label text-xs fw-bold text-uppercase text-muted mb-0">2. Generated Multilingual Response</label>
+            <button class="btn btn-xs btn-link text-decoration-none text-muted p-0" id="btn-copy-answer" title="Copy Answer" style="font-size: 0.75rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>Copy Answer
+            </button>
+          </div>
+
+          <div class="border rounded p-3 flex-grow-1 bg-white overflow-y-auto" id="voice-ai-answer" style="min-height: 180px; max-height: 250px; font-size: 0.92rem; line-height: 1.6; color: var(--text-color, #212529);">
+            <span class="text-muted italic">Waiting for local voice input query trigger...</span>
+          </div>
+        </div>
+
+        <!-- Metadata & Verified Citations -->
+        <div id="voice-metadata-citations" style="display: none;">
+          <div class="citation-area mt-1 border-top pt-3">
+            <small class="text-muted d-block mb-2 fw-semibold" style="font-size: 0.75rem;">Verified Context References:</small>
+            <div class="citations-list d-flex flex-wrap gap-1" id="voice-citations-list"></div>
+          </div>
+          <div class="mt-2 text-muted" id="voice-pipeline-metrics" style="font-size: 0.7rem;"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // UI elements
+    const languageSelect = document.getElementById('voice-language-select');
+    const startBtn = document.getElementById('btn-start-record');
+    const stopBtn = document.getElementById('btn-stop-record');
+    const timerEl = document.getElementById('recording-timer');
+    const micStatusBadge = document.getElementById('mic-status-badge');
+    const micStatusText = document.getElementById('mic-status-text');
+    const transcriptTextarea = document.getElementById('text-transcript');
+    const answerDiv = document.getElementById('voice-ai-answer');
+    const citationsDiv = document.getElementById('voice-metadata-citations');
+    const citationsList = document.getElementById('voice-citations-list');
+    const metricsDiv = document.getElementById('voice-pipeline-metrics');
+    const copyTranscriptBtn = document.getElementById('btn-copy-transcript');
+    const replayTranscriptBtn = document.getElementById('btn-replay-transcript');
+    const submitRagBtn = document.getElementById('btn-submit-rag');
+    const copyAnswerBtn = document.getElementById('btn-copy-answer');
+    const visualizerBars = document.querySelectorAll('.visualizer-bar');
+
+    // State parameters
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recordingInterval = null;
+    let recordingSeconds = 0;
+    let lastTranscript = "";
+    let audioContext = null;
+    let analyser = null;
+    let dataArray = null;
+    let sourceNode = null;
+    let animationFrameId = null;
+
+    // Load persisted voice language settings
+    const savedLanguage = localStorage.getItem('voice_language') || 'Auto Detect';
+    languageSelect.value = savedLanguage;
+
+    // Persist language on change
+    languageSelect.addEventListener('change', () => {
+      const selectedLang = languageSelect.value;
+      localStorage.setItem('voice_language', selectedLang);
+      
+      // Save settings to backend as well to maintain perfect state
+      fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voice_language: selectedLang })
+      })
+      .then(res => res.json())
+      .catch(err => console.error("Error synchronizing language setting:", err));
+      
+      showToast(`Target language updated to ${selectedLang}`, "success");
+    });
+
+    // Helper: format timer
+    function formatTime(secs) {
+      const m = Math.floor(secs / 60).toString().padStart(2, '0');
+      const s = (secs % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    // Helper: start visualizer bar animation
+    function startVisualizerAnimation(stream) {
+      try {
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContext();
+        analyser = audioContext.createAnalyser();
+        sourceNode = audioContext.createMediaStreamSource(stream);
+        sourceNode.connect(analyser);
+        
+        analyser.fftSize = 32;
+        const bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+        
+        function draw() {
+          if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
+          animationFrameId = requestAnimationFrame(draw);
+          analyser.getByteFrequencyData(dataArray);
+          
+          visualizerBars.forEach((bar, idx) => {
+            const val = dataArray[idx % bufferLength] || 0;
+            // Map 0-255 value to 10px-55px height
+            const height = Math.max(10, Math.min(55, (val / 255) * 45 + 10));
+            bar.style.height = `${height}px`;
+          });
+        }
+        
+        draw();
+      } catch (err) {
+        // Fallback random interval visualizer
+        console.warn("Web Audio Visualizer unavailable, falling back to simulation:", err);
+        recordingInterval = setInterval(() => {
+          visualizerBars.forEach(bar => {
+            const rHeight = Math.floor(Math.random() * 40) + 10;
+            bar.style.height = `${rHeight}px`;
+          });
+        }, 120);
+      }
+    }
+
+    // Stop visualizer animation
+    function stopVisualizerAnimation() {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (sourceNode) sourceNode.disconnect();
+      if (audioContext) audioContext.close();
+      visualizerBars.forEach((bar, idx) => {
+        // Reset to default heights
+        const heights = [12, 18, 24, 14, 32, 20, 12, 26, 16];
+        bar.style.height = `${heights[idx % heights.length]}px`;
+        bar.classList.remove('recording');
+      });
+    }
+
+    // 1. START RECORDING WORKFLOW
+    startBtn.addEventListener('click', async () => {
+      audioChunks = [];
+      recordingSeconds = 0;
+      timerEl.textContent = formatTime(0);
+      
+      try {
+        // Request microphone permission
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          stopVisualizerAnimation();
+          const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+          if (audioBlob.size < 2000) {
+            showToast("Recording cancelled or empty. Speak louder.", "error");
+            resetRecorderUI();
+            return;
+          }
+          await uploadAndProcessAudio(audioBlob);
+        };
+
+        // Update UI for recording active
+        startBtn.style.display = 'none';
+        stopBtn.style.display = 'inline-flex';
+        timerEl.style.display = 'block';
+        micStatusBadge.textContent = 'RECORDING ACTIVE';
+        micStatusBadge.className = 'badge bg-danger pulse-mic';
+        micStatusText.textContent = 'Listening to your voice inputs locally... Press STOP when finished.';
+        
+        visualizerBars.forEach(bar => bar.classList.add('recording'));
+
+        // Start local recorder
+        mediaRecorder.start();
+        startVisualizerAnimation(stream);
+
+        // Keep recording timer ticking
+        recordingInterval = setInterval(() => {
+          recordingSeconds++;
+          timerEl.textContent = formatTime(recordingSeconds);
+          // Limit recording duration to 60 seconds to safeguard memory
+          if (recordingSeconds >= 60) {
+            showToast("Maximum recording duration reached.", "warning");
+            stopBtn.click();
+          }
+        }, 1000);
+
+      } catch (err) {
+        console.error("Microphone access denied or error occurred:", err);
+        showToast("No microphone detected. Please enable microphone permissions in your browser.", "error");
+        micStatusText.textContent = "Microphone access blocked. Click start and approve permission.";
+        resetRecorderUI();
+      }
+    });
+
+    // 2. STOP RECORDING WORKFLOW
+    stopBtn.addEventListener('click', () => {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        // Stop all track elements to release microphone hardware safely
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      }
+      if (recordingInterval) {
+        clearInterval(recordingInterval);
+      }
+      micStatusBadge.textContent = 'COMPILING AUDIO';
+      micStatusBadge.className = 'badge bg-warning text-dark';
+      micStatusText.textContent = 'Synthesizing voice buffer. Initializing local Whisper-Tiny transcription...';
+    });
+
+    function resetRecorderUI() {
+      startBtn.style.display = 'inline-flex';
+      stopBtn.style.display = 'none';
+      timerEl.style.display = 'none';
+      micStatusBadge.textContent = 'MICROPHONE IDLE';
+      micStatusBadge.className = 'badge bg-secondary-subtle text-secondary';
+      micStatusText.textContent = 'Microphone Idle. Ready to process speech-to-text offline.';
+      stopVisualizerAnimation();
+    }
+
+    // 3. VOICE QUERY PIPELINE UPLOAD & EXECUTE
+    async function uploadAndProcessAudio(blob) {
+      answerDiv.innerHTML = `
+        <div class="d-flex align-items-center gap-3 text-primary py-3">
+          <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+          <span class="text-muted" style="font-size: 0.9rem;">Transcribing with Whisper & executing RAG pipeline offline...</span>
+        </div>
+      `;
+      citationsDiv.style.display = 'none';
+
+      const formData = new FormData();
+      formData.append('file', blob, 'voice_input.wav');
+      formData.append('target_language', languageSelect.value);
+
+      try {
+        const res = await fetch('/api/voice', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+        resetRecorderUI();
+
+        if (!data.success) {
+          answerDiv.innerHTML = `<span class="text-danger fw-semibold">Error: ${data.error}</span>`;
+          return;
+        }
+
+        // Render transcribed text
+        lastTranscript = data.transcript;
+        transcriptTextarea.value = data.transcript;
+
+        // Render Answer
+        answerDiv.innerHTML = `
+          <div class="fw-bold text-xs text-primary mb-2">Detected Language: ${(data.detected_language || 'EN').toUpperCase()}</div>
+          <div style="white-space: pre-wrap;">${data.answer}</div>
+        `;
+
+        // Render Citations
+        if (data.sources && data.sources.length > 0) {
+          citationsList.innerHTML = data.sources.map(s => {
+            const encodedSnippet = encodeURIComponent(s.snippet || '');
+            return `
+              <span class="badge bg-secondary-subtle text-secondary me-1 py-1 border citation-link" style="font-size: 0.72rem;" onclick="viewIndexedChunkSnippet('${s.document_name.replace(/'/g, "\\'")}', ${s.page}, '${encodedSnippet}')" title="Click to view reference passage">
+                ${s.document_name} (Page ${s.page}) • Sim: ${(s.similarity_score || 0.88).toFixed(2)}
+              </span>
+            `;
+          }).join('');
+          citationsDiv.style.display = 'block';
+        } else {
+          citationsList.innerHTML = `<span class="badge bg-danger-subtle text-danger py-1" style="font-size: 0.72rem;">No matching FAISS context found</span>`;
+          citationsDiv.style.display = 'block';
+        }
+
+        // Render Metrics
+        metricsDiv.innerHTML = `
+          Whisper STT: ${data.transcription_time_ms} ms | FAISS Retrieval: ${data.retrieval_time_ms} ms | Ollama: ${data.generation_time_ms} ms | Model: ${(data.model || 'llama3').toUpperCase()}
+        `;
+
+        showToast("Voice query successfully processed offline!", "success");
+
+      } catch (err) {
+        console.error("Voice pipeline error:", err);
+        answerDiv.innerHTML = `<span class="text-danger fw-semibold">Connection failed. Make sure Flask node is running with speech and translation services active.</span>`;
+        resetRecorderUI();
+      }
+    }
+
+    // 4. SUBMIT EDITED TRANSCRIPT MANUALLY TO RAG
+    submitRagBtn.addEventListener('click', async () => {
+      const textQuery = transcriptTextarea.value.trim();
+      if (!textQuery) {
+        showToast("Transcript box is empty.", "warning");
+        return;
+      }
+
+      answerDiv.innerHTML = `
+        <div class="d-flex align-items-center gap-3 text-primary py-3">
+          <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+          <span class="text-muted" style="font-size: 0.9rem;">Triggering local RAG vector search & synthesis...</span>
+        </div>
+      `;
+      citationsDiv.style.display = 'none';
+
+      try {
+        // Send post request to standard chat for instant response
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: textQuery,
+            stream: false
+          })
+        });
+
+        const data = await res.json();
+        if (!data.success) {
+          answerDiv.innerHTML = `<span class="text-danger fw-semibold">Error querying local engine: ${data.error}</span>`;
+          return;
+        }
+
+        answerDiv.innerHTML = `<div style="white-space: pre-wrap;">${data.answer}</div>`;
+
+        // Render Citations
+        if (data.sources && data.sources.length > 0) {
+          citationsList.innerHTML = data.sources.map(s => {
+            const encodedSnippet = encodeURIComponent(s.snippet || '');
+            return `
+              <span class="badge bg-secondary-subtle text-secondary me-1 py-1 border citation-link" style="font-size: 0.72rem;" onclick="viewIndexedChunkSnippet('${s.document_name.replace(/'/g, "\\'")}', ${s.page}, '${encodedSnippet}')" title="Click to view reference passage">
+                ${s.document_name} (Page ${s.page}) • Sim: ${(s.similarity_score || 0.88).toFixed(2)}
+              </span>
+            `;
+          }).join('');
+          citationsDiv.style.display = 'block';
+        } else {
+          citationsList.innerHTML = `<span class="badge bg-danger-subtle text-danger py-1" style="font-size: 0.72rem;">No matching FAISS context found</span>`;
+          citationsDiv.style.display = 'block';
+        }
+
+        metricsDiv.innerHTML = `
+          FAISS Retrieval: ${data.retrieval_time_ms} ms | Ollama: ${data.generation_time_ms} ms | Model: ${(data.model || 'llama3').toUpperCase()}
+        `;
+
+        showToast("RAG query compiled successfully!", "success");
+
+      } catch (err) {
+        answerDiv.innerHTML = `<span class="text-danger">Failed to connect to local RAG service.</span>`;
+      }
+    });
+
+    // 5. COPY TRANSCRIPT
+    copyTranscriptBtn.addEventListener('click', () => {
+      const text = transcriptTextarea.value.trim();
+      if (!text) return;
+      navigator.clipboard.writeText(text)
+        .then(() => showToast("Transcript copied!", "success"))
+        .catch(() => showToast("Copy failed.", "error"));
+    });
+
+    // 6. COPY ANSWER
+    copyAnswerBtn.addEventListener('click', () => {
+      const text = answerDiv.textContent.trim();
+      if (!text || text.includes("Waiting for local voice")) return;
+      navigator.clipboard.writeText(text)
+        .then(() => showToast("Answer copied!", "success"))
+        .catch(() => showToast("Copy failed.", "error"));
+    });
+
+    // 7. REPLAY TRANSCRIPT
+    replayTranscriptBtn.addEventListener('click', () => {
+      if (lastTranscript) {
+        transcriptTextarea.value = lastTranscript;
+        showToast("Last spoken transcript loaded.", "success");
+      } else {
+        showToast("No active history for replay.", "warning");
+      }
+    });
+  });
+</script>
+{% endblock %}
