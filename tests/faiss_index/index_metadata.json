@@ -1,0 +1,7 @@
+{
+    "total_documents": 2,
+    "total_vectors": 2,
+    "last_updated": "2026-07-21T04:31:37Z",
+    "search_requests": 16,
+    "embedding_model": "all-MiniLM-L6-v2"
+}

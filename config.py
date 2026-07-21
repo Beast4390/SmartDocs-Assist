@@ -31,12 +31,6 @@ class Config:
     OLLAMA_BASE_URL = os.environ.get('OLLAMA_BASE_URL', 'http://localhost:11434')
     DEFAULT_LLM_MODEL = os.environ.get('DEFAULT_LLM_MODEL', 'llama3')
     DEFAULT_EMBEDDING_MODEL = os.environ.get('DEFAULT_EMBEDDING_MODEL', 'all-MiniLM-L6-v2')
-
-    # Configurable RAG parameters
-    CHUNK_SIZE = int(os.environ.get('CHUNK_SIZE', 1000))
-    CHUNK_OVERLAP = int(os.environ.get('CHUNK_OVERLAP', 200))
-    TOP_K = int(os.environ.get('TOP_K', 5))
-    TEMPERATURE = float(os.environ.get('TEMPERATURE', 0.7))
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 
 class DevelopmentConfig(Config):

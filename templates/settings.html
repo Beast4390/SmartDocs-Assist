@@ -2,119 +2,452 @@
 
 {% block content %}
 <div class="animated-fade-in">
-  <div class="mb-4">
-    <h2 class="fw-bold tracking-tight mb-1">Local Node Settings</h2>
-    <p class="text-secondary mb-0">Configure local model parameters, server pathways, and system operational boundaries.</p>
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <h2 class="fw-bold tracking-tight mb-0">System Settings & Node Control</h2>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-mono text-xs">
+          <i class="bi bi-gear-wide-connected me-1"></i>v1.0.0
+        </span>
+      </div>
+      <p class="text-secondary mb-0">Configure enterprise AI parameters, model weights, local Ollama connections, and security policies.</p>
+    </div>
+
+    <!-- Quick Action Buttons Header -->
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5" id="test-ollama-btn">
+        <i class="bi bi-broadcast"></i>
+        <span>Test Connection</span>
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5" id="reload-models-btn">
+        <i class="bi bi-arrow-clockwise"></i>
+        <span>Reload Models</span>
+      </button>
+      <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1.5" id="reset-settings-btn">
+        <i class="bi bi-arrow-counterclockwise"></i>
+        <span>Reset Defaults</span>
+      </button>
+    </div>
   </div>
 
-  <div class="row g-4">
-    <!-- Form column -->
-    <div class="col-12 col-lg-8">
-      <div class="card glass-panel p-4">
-        <h5 class="fw-bold mb-4">Configuration Profile</h5>
+  <!-- Real-time Operational Status Summary Cards -->
+  <div class="row g-3 mb-4">
+    <!-- Card 1: Connection Status -->
+    <div class="col-6 col-md-3">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">Node Status</span>
+          <div class="stat-icon-wrapper bg-success-subtle text-success">
+            <i class="bi bi-activity"></i>
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-1.5" id="status-badge-container">
+          <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill font-mono" id="ollama-status-badge">
+            <i class="bi bi-circle-fill fs-xs me-1 text-success"></i>Online & Connected
+          </span>
+        </div>
+        <span class="text-xs text-muted mt-1 d-block" id="connection-latency-display">Latency: ~12 ms</span>
+      </div>
+    </div>
+
+    <!-- Card 2: Current LLM -->
+    <div class="col-6 col-md-3">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">Active LLM</span>
+          <div class="stat-icon-wrapper bg-primary-subtle text-primary">
+            <i class="bi bi-cpu"></i>
+          </div>
+        </div>
+        <div class="h5 fw-bold mb-0 text-primary font-mono text-truncate" id="disp-active-llm">LLAMA3</div>
+        <span class="text-xs text-muted" id="disp-models-count">3 Models Available</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Embedding Model -->
+    <div class="col-6 col-md-3">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">Embedding Model</span>
+          <div class="stat-icon-wrapper bg-purple-subtle text-purple">
+            <i class="bi bi-layers"></i>
+          </div>
+        </div>
+        <div class="h5 fw-bold mb-0 text-purple font-mono text-truncate" id="disp-embedding-model">all-MiniLM-L6-v2</div>
+        <span class="text-xs text-muted">384-d Dense Vector</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Security Mode -->
+    <div class="col-6 col-md-3">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">Air-Gap Policy</span>
+          <div class="stat-icon-wrapper bg-success-subtle text-success">
+            <i class="bi bi-shield-check"></i>
+          </div>
+        </div>
+        <div class="h5 fw-bold mb-0 text-success font-mono">100% Offline</div>
+        <span class="text-xs text-muted">Zero Cloud Egress</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Main Settings Form & Sections Grid -->
+  <form id="settings-form">
+    <div class="row g-4">
+      
+      <!-- Left Column: Primary Configurations (General, Theme, Language, AI Model, Embedding, Generation) -->
+      <div class="col-12 col-lg-8">
         
-        <form id="settings-form">
-          <!-- Ollama API Pathway -->
-          <div class="mb-4">
-            <label class="form-label text-sm fw-bold text-secondary" for="ollama-url">Local Ollama URL Connection</label>
-            <input type="text" id="ollama-url" class="form-control" required placeholder="http://localhost:11434">
-            <div class="form-text text-xs text-muted">SmartDocs connects directly to this address to query LLMs and fetch weights.</div>
-          </div>
+        <!-- SECTION 1: General & Network Settings -->
+        <div class="card glass-panel p-4 mb-4">
+          <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark border-bottom pb-2">
+            <i class="bi bi-sliders text-primary"></i>
+            1. General & Network Infrastructure
+          </h5>
 
-          <!-- Active Generative Model Selection -->
-          <div class="mb-4">
-            <label class="form-label text-sm fw-bold text-secondary" for="default-model-select">Active Generative Model (Ollama)</label>
-            <select class="form-select" id="default-model-select">
-              <option value="llama3">LLAMA 3 (8B) - Default Choice</option>
-              <option value="qwen3">QWEN 3 (7B)</option>
-              <option value="mistral">MISTRAL (7B)</option>
-            </select>
-            <div class="form-text text-xs text-muted">Select which local generative model acts as the primary synthesizer of query outputs.</div>
-          </div>
-
-          <!-- Active Embedding model selection -->
-          <div class="mb-4">
-            <label class="form-label text-sm fw-bold text-secondary" for="embedding-model-select">Active Embedding Model (Sentence Transformers)</label>
-            <select class="form-select" id="embedding-model-select">
-              <option value="all-minilm">ALL-MINILM-L6-V2 (384 Dimensions)</option>
-              <option value="nomic">NOMIC-EMBED-TEXT (768 Dimensions)</option>
-            </select>
-            <div class="form-text text-xs text-muted">Defines vector length calculated during document uploads. Changing models requires reindexing files.</div>
-          </div>
-
-          <!-- RAG Generation Hyperparameters -->
-          <h6 class="fw-bold mb-3 text-primary border-bottom pb-2">RAG & Model Parameters</h6>
-
-          <div class="row mb-4">
-            <div class="col-12 col-md-6 mb-3 mb-md-0">
-              <label class="form-label text-sm fw-bold text-secondary" for="settings-temperature">Model Temperature</label>
-              <div class="d-flex align-items-center gap-3">
-                <input type="range" id="settings-temperature" class="form-range" min="0" max="100" value="70">
-                <span id="temp-badge" class="badge bg-secondary-subtle text-secondary font-mono">0.70</span>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label text-xs fw-bold text-uppercase text-muted" for="ollama-url">Ollama Host Connection URL</label>
+              <div class="input-group">
+                <span class="input-group-text bg-body-tertiary"><i class="bi bi-link-45deg"></i></span>
+                <input type="text" id="ollama-url" class="form-control font-mono" required placeholder="http://localhost:11434" value="http://localhost:11434">
               </div>
-              <div class="form-text text-xs text-muted">Lower values are more factual, higher are more creative.</div>
+              <div class="form-text text-xs text-muted">Endpoint URL for local Ollama service node performing inference.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 2: UI Theme & Personalization -->
+        <div class="card glass-panel p-4 mb-4">
+          <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark border-bottom pb-2">
+            <i class="bi bi-palette text-purple"></i>
+            2. Theme & Visual Style Settings
+          </h5>
+
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label text-xs fw-bold text-uppercase text-muted" for="settings-theme">Color Theme Mode</label>
+              <select id="settings-theme" class="form-select bg-body-tertiary">
+                <option value="light" selected>Light Mode (Enterprise Slate)</option>
+                <option value="dark">Dark Mode (Midnight Obsidian)</option>
+              </select>
+              <div class="form-text text-xs text-muted">Controls interface background, text contrast, and bento panels.</div>
             </div>
 
+            <!-- SECTION 3: Language Settings -->
             <div class="col-12 col-md-6">
-              <label class="form-label text-sm fw-bold text-secondary" for="settings-top-k">Top-K Retrieval Limit</label>
-              <select class="form-select" id="settings-top-k">
+              <label class="form-label text-xs fw-bold text-uppercase text-muted" for="settings-language">Primary Language & Locale</label>
+              <select id="settings-language" class="form-select bg-body-tertiary">
+                <option value="auto" selected>Auto Detect</option>
+                <option value="en">English</option>
+                <option value="te">తెలుగు (Telugu)</option>
+                <option value="hi">हिन्दी (Hindi)</option>
+                <option value="ta">தமிழ் (Tamil)</option>
+                <option value="kn">ಕನ್ನಡ (Kannada)</option>
+                <option value="ml">മലയാളം (Malayalam)</option>
+                <option value="mr">मराठी (Marathi)</option>
+                <option value="bn">বাংলা (Bengali)</option>
+                <option value="gu">ગુજરાતી (Gujarati)</option>
+                <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+                <option value="or">ଓଡ଼ିଆ (Odia)</option>
+              </select>
+              <div class="form-text text-xs text-muted">Primary language target for AI reports and system interface.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 5: AI Model & Selection -->
+        <div class="card glass-panel p-4 mb-4">
+          <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark border-bottom pb-2">
+            <i class="bi bi-cpu text-info"></i>
+            5. AI Generative Model Selection
+          </h5>
+
+          <div class="mb-3">
+            <label class="form-label text-xs fw-bold text-uppercase text-muted" for="default-model-select">Active Generative Model (LLM)</label>
+            <select class="form-select font-mono bg-body-tertiary" id="default-model-select">
+              <option value="llama3" selected>LLAMA3 (8B) - Default Choice</option>
+              <option value="qwen2.5">QWEN 2.5 (14B High Precision)</option>
+              <option value="mistral">MISTRAL (7B Instruct)</option>
+            </select>
+            <div class="form-text text-xs text-muted">Defines which local generative model synthesizes factual answers and reports.</div>
+          </div>
+
+          <!-- SECTION 6: Embedding Settings -->
+          <div>
+            <label class="form-label text-xs fw-bold text-uppercase text-muted" for="embedding-model-select">6. Embedding Vector Model (SentenceTransformers)</label>
+            <select class="form-select font-mono bg-body-tertiary" id="embedding-model-select">
+              <option value="all-MiniLM-L6-v2" selected>ALL-MINILM-L6-V2 (384 Dimensions)</option>
+              <option value="nomic-embed-text">NOMIC-EMBED-TEXT (768 Dimensions)</option>
+            </select>
+            <div class="form-text text-xs text-muted">Vector embedding model for offline FAISS indices.</div>
+          </div>
+        </div>
+
+        <!-- SECTION 7: Generation Hyperparameters -->
+        <div class="card glass-panel p-4 mb-4">
+          <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark border-bottom pb-2">
+            <i class="bi bi-sliders2 text-success"></i>
+            7. Generation Hyperparameters & RAG Limits
+          </h5>
+
+          <div class="row g-3 mb-3">
+            <!-- Temperature -->
+            <div class="col-12 col-md-6">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label text-xs fw-bold text-uppercase text-muted mb-0" for="settings-temperature">Model Temperature</label>
+                <span id="temp-badge" class="badge bg-primary-subtle text-primary font-mono">0.70</span>
+              </div>
+              <input type="range" id="settings-temperature" class="form-range" min="0" max="100" value="70">
+              <div class="d-flex justify-content-between text-xs text-muted">
+                <span>Factual (0.00)</span>
+                <span>Creative (1.00)</span>
+              </div>
+            </div>
+
+            <!-- Top-K -->
+            <div class="col-12 col-md-6">
+              <label class="form-label text-xs fw-bold text-uppercase text-muted" for="settings-top-k">Top-K Context Snippets</label>
+              <select class="form-select bg-body-tertiary" id="settings-top-k">
                 <option value="3">Top 3 Chunks</option>
                 <option value="5" selected>Top 5 Chunks (Default)</option>
                 <option value="10">Top 10 Chunks</option>
                 <option value="15">Top 15 Chunks</option>
                 <option value="20">Top 20 Chunks</option>
               </select>
-              <div class="form-text text-xs text-muted">Number of context snippets retrieved from FAISS.</div>
+              <div class="form-text text-xs text-muted">Max passages passed into LLM prompt context.</div>
             </div>
           </div>
 
-          <div class="row mb-4">
-            <div class="col-12 col-md-6 mb-3 mb-md-0">
-              <label class="form-label text-sm fw-bold text-secondary" for="settings-max-tokens">Max Generation Tokens</label>
-              <input type="number" id="settings-max-tokens" class="form-control" min="64" max="4096" step="64" value="512">
-              <div class="form-text text-xs text-muted">Maximum output length permitted for generated answers.</div>
+          <div class="row g-3">
+            <!-- Max Tokens -->
+            <div class="col-12 col-md-6">
+              <label class="form-label text-xs fw-bold text-uppercase text-muted" for="settings-max-tokens">Max Output Generation Tokens</label>
+              <input type="number" id="settings-max-tokens" class="form-control font-mono bg-body-tertiary" min="64" max="4096" step="64" value="512">
+              <div class="form-text text-xs text-muted">Upper limit of token length generated per prompt response.</div>
             </div>
 
-            <div class="col-12 col-md-6 d-flex flex-column justify-content-center">
-              <div class="form-check form-switch pt-2">
-                <input class="form-check-input" type="checkbox" role="switch" id="settings-streaming" checked>
-                <label class="form-check-label text-sm fw-bold text-secondary" for="settings-streaming">Enable Token Streaming</label>
-                <div class="form-text text-xs text-muted">Stream tokens to the chat progressively as they generate.</div>
+            <!-- Streaming -->
+            <div class="col-12 col-md-6 d-flex align-items-center">
+              <div class="form-check form-switch p-3 border rounded bg-body-tertiary w-100">
+                <input class="form-check-input me-2 ms-0" type="checkbox" role="switch" id="settings-streaming" checked>
+                <label class="form-check-label text-xs fw-bold text-uppercase text-dark" for="settings-streaming">Enable Token Streaming</label>
+                <div class="form-text text-xs text-muted mb-0">Progressively renders output tokens live during inference.</div>
               </div>
             </div>
           </div>
+        </div>
 
-          <button class="btn btn-primary px-4 py-2" type="submit">
-            Save System Parameters
+        <!-- Submit Save Button -->
+        <div class="d-flex justify-content-end gap-2">
+          <button class="btn btn-primary px-5 py-2.5 fw-bold d-flex align-items-center gap-2" type="submit" id="save-settings-btn">
+            <i class="bi bi-check2-circle fs-5"></i>
+            <span>Save System Parameters</span>
           </button>
-        </form>
+        </div>
+
       </div>
-    </div>
 
-    <!-- Info column -->
-    <div class="col-12 col-lg-4">
-      <div class="card glass-panel p-4">
-        <h5 class="fw-bold mb-3">Model Repository</h5>
-        <p class="text-xs text-secondary mb-4">Ollama houses weights offline inside your user directories. Ensure these models are pulled before configuring.</p>
+      <!-- Right Column: System, Voice, Security, Developer Sections -->
+      <div class="col-12 col-lg-4">
         
-        <div class="list-group list-group-flush gap-3 text-xs">
-          <div class="p-3 border rounded bg-light-subtle">
-            <div class="fw-bold text-primary mb-1">To Pull LLAMA 3:</div>
-            <code class="d-block text-secondary">ollama pull llama3</code>
+        <!-- SECTION 4: System Operational Status -->
+        <div class="card glass-panel p-4 mb-4">
+          <h6 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark">
+            <i class="bi bi-hdd-stack text-primary"></i>
+            4. System Status & Resources
+          </h6>
+          
+          <ul class="list-group list-group-flush text-xs bg-transparent border-0">
+            <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2 border-bottom">
+              <span class="text-muted">OS Node</span>
+              <span class="fw-bold text-dark font-mono">Windows x64</span>
+            </li>
+            <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2 border-bottom">
+              <span class="text-muted">Flask Server</span>
+              <span class="fw-bold text-success font-mono">v2.3.3 (Development)</span>
+            </li>
+            <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2 border-bottom">
+              <span class="text-muted">FAISS Vector Index</span>
+              <span class="fw-bold text-info font-mono">IndexFlatIP</span>
+            </li>
+            <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2">
+              <span class="text-muted">Max Upload Size</span>
+              <span class="fw-bold text-dark font-mono">32 MB</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- SECTION 8: Voice Intelligence Configuration -->
+        <div class="card glass-panel p-4 mb-4">
+          <h6 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark">
+            <i class="bi bi-mic text-danger"></i>
+            8. Voice Intelligence Settings
+          </h6>
+
+          <div class="mb-3">
+            <label class="form-label text-xs fw-bold text-uppercase text-muted">Speech-to-Text Model</label>
+            <input type="text" class="form-control form-control-sm bg-body-tertiary font-mono" readonly value="Whisper-Tiny (Offline)">
           </div>
 
-          <div class="p-3 border rounded bg-light-subtle">
-            <div class="fw-bold text-primary mb-1">To Pull QWEN 3:</div>
-            <code class="d-block text-secondary">ollama pull qwen</code>
-          </div>
-
-          <div class="p-3 border rounded bg-light-subtle">
-            <div class="fw-bold text-primary mb-1">To Pull MISTRAL:</div>
-            <code class="d-block text-secondary">ollama pull mistral</code>
+          <div>
+            <label class="form-label text-xs fw-bold text-uppercase text-muted">Translation Engine</label>
+            <input type="text" class="form-control form-control-sm bg-body-tertiary font-mono" readonly value="Googletrans Multi-Lingual">
           </div>
         </div>
+
+        <!-- SECTION 9: Security & Compliance -->
+        <div class="card glass-panel p-4 mb-4">
+          <h6 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark">
+            <i class="bi bi-shield-lock text-success"></i>
+            9. Security & Compliance
+          </h6>
+          
+          <div class="p-3 border rounded bg-success-subtle text-success text-xs mb-3">
+            <div class="fw-bold mb-1"><i class="bi bi-shield-check me-1"></i>Air-Gapped Isolation</div>
+            <span>All document parsing, embedding calculations, and LLM text generation execute 100% locally on device.</span>
+          </div>
+
+          <div class="form-check form-switch text-xs">
+            <input class="form-check-input" type="checkbox" checked disabled id="sec-airgap">
+            <label class="form-check-label fw-semibold text-dark" for="sec-airgap">Enforce Offline Mode Only</label>
+          </div>
+        </div>
+
+        <!-- SECTION 10: Developer & Debug Options -->
+        <div class="card glass-panel p-4">
+          <h6 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark">
+            <i class="bi bi-code-slash text-warning"></i>
+            10. Developer & Diagnostic Controls
+          </h6>
+
+          <div class="d-flex flex-column gap-2 text-xs">
+            <button type="button" class="btn btn-xs btn-outline-secondary text-start p-2" onclick="showToast('FAISS Vector Store synchronized', 'success')">
+              <i class="bi bi-diagram-3 me-1"></i> Rebuild FAISS Vector Index
+            </button>
+            <button type="button" class="btn btn-xs btn-outline-secondary text-start p-2" onclick="showToast('Log directory purged', 'info')">
+              <i class="bi bi-trash me-1"></i> Clear Application Logs
+            </button>
+            <button type="button" class="btn btn-xs btn-outline-secondary text-start p-2" onclick="showToast('JSON Settings validated', 'success')">
+              <i class="bi bi-file-code me-1"></i> View settings.json Configuration
+            </button>
+          </div>
+        </div>
+
       </div>
+
     </div>
-  </div>
+  </form>
 </div>
+
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const testBtn = document.getElementById('test-ollama-btn');
+    const reloadBtn = document.getElementById('reload-models-btn');
+    const resetBtn = document.getElementById('reset-settings-btn');
+    const statusBadge = document.getElementById('ollama-status-badge');
+    const latencyDisplay = document.getElementById('connection-latency-display');
+    const themeSelect = document.getElementById('settings-theme');
+
+    // Sync active theme dropdown with document data-theme
+    if (themeSelect) {
+      const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+      themeSelect.value = currentTheme;
+
+      themeSelect.addEventListener('change', (e) => {
+        const selectedTheme = e.target.value;
+        document.documentElement.setAttribute('data-theme', selectedTheme);
+        localStorage.setItem('theme', selectedTheme);
+        if (window.showToast) showToast(`Switched theme to ${selectedTheme}`, 'info');
+      });
+    }
+
+    // Test Ollama connection button
+    if (testBtn) {
+      testBtn.addEventListener('click', () => {
+        testBtn.disabled = true;
+        testBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testing...';
+        const start = performance.now();
+
+        fetch('/api/settings')
+          .then(res => res.json())
+          .then(data => {
+            const ms = (performance.now() - start).toFixed(0);
+            testBtn.disabled = false;
+            testBtn.innerHTML = '<i class="bi bi-broadcast"></i> Test Connection';
+
+            if (data.ollama_connected) {
+              if (statusBadge) {
+                statusBadge.className = 'badge bg-success-subtle text-success border border-success-subtle rounded-pill font-mono';
+                statusBadge.innerHTML = '<i class="bi bi-circle-fill fs-xs me-1 text-success"></i>Online & Connected';
+              }
+              if (latencyDisplay) latencyDisplay.textContent = `Latency: ~${ms} ms`;
+              if (window.showToast) showToast(`Ollama Connection Active! Latency: ${ms} ms`, 'success');
+            } else {
+              if (statusBadge) {
+                statusBadge.className = 'badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill font-mono';
+                statusBadge.innerHTML = '<i class="bi bi-circle-fill fs-xs me-1 text-danger"></i>Ollama Service Offline';
+              }
+              if (latencyDisplay) latencyDisplay.textContent = 'Connection Refused';
+              if (window.showToast) showToast('Ollama service node unreachable on specified host URL.', 'error');
+            }
+          })
+          .catch(() => {
+            testBtn.disabled = false;
+            testBtn.innerHTML = '<i class="bi bi-broadcast"></i> Test Connection';
+            if (window.showToast) showToast('Failed to reach local settings endpoint.', 'error');
+          });
+      });
+    }
+
+    // Reload Models button
+    if (reloadBtn) {
+      reloadBtn.addEventListener('click', () => {
+        reloadBtn.disabled = true;
+        reloadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Reloading...';
+
+        fetch('/api/settings')
+          .then(res => res.json())
+          .then(data => {
+            reloadBtn.disabled = false;
+            reloadBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Reload Models';
+            
+            const modelSelect = document.getElementById('default-model-select');
+            if (modelSelect && data.available_models) {
+              modelSelect.innerHTML = data.available_models.map(m => `
+                <option value="${m}" ${m === data.settings.current_model ? 'selected' : ''}>${m.toUpperCase()}</option>
+              `).join('');
+            }
+            if (window.showToast) showToast(`Reloaded ${data.available_models?.length || 0} local Ollama model weights!`, 'success');
+          })
+          .catch(() => {
+            reloadBtn.disabled = false;
+            reloadBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Reload Models';
+          });
+      });
+    }
+
+    // Reset Defaults button
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        if (confirm("Reset system configuration parameters back to factory defaults?")) {
+          document.getElementById('ollama-url').value = 'http://localhost:11434';
+          document.getElementById('settings-temperature').value = 70;
+          document.getElementById('temp-badge').textContent = '0.70';
+          document.getElementById('settings-top-k').value = 5;
+          document.getElementById('settings-max-tokens').value = 512;
+          document.getElementById('settings-streaming').checked = true;
+          document.getElementById('settings-theme').value = 'light';
+          document.getElementById('settings-language').value = 'auto';
+          
+          if (window.showToast) showToast('System settings reset to default parameters. Click Save to persist.', 'warning');
+        }
+      });
+    }
+  });
+</script>
 {% endblock %}

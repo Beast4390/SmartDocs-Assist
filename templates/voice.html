@@ -38,15 +38,21 @@
     </div>
     
     <!-- Target Language Select -->
-    <div class="d-flex align-items-center gap-2 bg-white p-2 rounded border shadow-sm" style="max-width: 280px;">
+    <div class="d-flex align-items-center gap-2 bg-white p-2 rounded border shadow-sm" style="max-width: 310px;">
       <span class="text-muted text-xs fw-bold text-nowrap ms-1">Target Language:</span>
       <select class="form-select form-select-sm border-0 fw-medium shadow-none font-sans" id="voice-language-select">
-        <option value="Auto Detect">Auto Detect</option>
-        <option value="English">English</option>
-        <option value="Hindi">Hindi</option>
-        <option value="Telugu">Telugu</option>
-        <option value="Tamil">Tamil</option>
-        <option value="Kannada">Kannada</option>
+        <option value="auto" selected>Auto Detect</option>
+        <option value="en">English</option>
+        <option value="te">తెలుగు (Telugu)</option>
+        <option value="hi">हिन्दी (Hindi)</option>
+        <option value="ta">தமிழ் (Tamil)</option>
+        <option value="kn">ಕನ್ನಡ (Kannada)</option>
+        <option value="ml">മലയാളം (Malayalam)</option>
+        <option value="mr">मराठी (Marathi)</option>
+        <option value="bn">বাংলা (Bengali)</option>
+        <option value="gu">ગુજરાતી (Gujarati)</option>
+        <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+        <option value="or">ଓଡ଼ିଆ (Odia)</option>
       </select>
     </div>
   </div>
@@ -198,8 +204,14 @@
     let animationFrameId = null;
 
     // Load persisted voice language settings
-    const savedLanguage = localStorage.getItem('voice_language') || 'Auto Detect';
-    languageSelect.value = savedLanguage;
+    const savedLanguage = localStorage.getItem('voice_language') || 'auto';
+    if (languageSelect) {
+      if ([...languageSelect.options].some(o => o.value === savedLanguage)) {
+        languageSelect.value = savedLanguage;
+      } else {
+        languageSelect.value = 'auto';
+      }
+    }
 
     // Persist language on change
     languageSelect.addEventListener('change', () => {

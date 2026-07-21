@@ -1,5 +1,8 @@
 import os
 import json
+import logging
+
+logger = logging.getLogger('smartdocs.metrics')
 
 DEFAULT_METRICS = {
     "total_questions": 0,
@@ -46,7 +49,7 @@ def save_metrics(metrics: dict):
         with open(path, "w", encoding="utf-8") as f:
             json.dump(metrics, f, indent=4, ensure_ascii=False)
     except Exception as e:
-        print(f"Error saving metrics: {e}")
+        logger.error(f"Error saving metrics: {e}")
 
 def record_question(retrieval_time_ms: int, generation_time_ms: int):
     metrics = load_metrics()

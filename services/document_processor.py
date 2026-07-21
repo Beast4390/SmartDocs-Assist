@@ -145,7 +145,7 @@ class DocumentProcessor:
                     pages_text.append(text)
             except Exception as page_err:
                 # Log page skip and continue to extract remaining text
-                print(f"[Warning] Skipped corrupted page {i+1} in {file_path}: {str(page_err)}")
+                self.logger.warning(f"Skipped corrupted page {i+1} in {file_path}: {str(page_err)}")
                 continue
                 
         doc.close()

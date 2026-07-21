@@ -7,6 +7,7 @@ from utils.metrics_manager import record_voice_query, record_question
 voice_bp = Blueprint('voice', __name__)
 
 @voice_bp.route('/api/voice', methods=['POST'])
+@voice_bp.route('/api/voice/process', methods=['POST'])
 @voice_bp.route('/voice', methods=['POST'])
 def handle_voice_query():
     """
@@ -131,10 +132,10 @@ def handle_voice_query():
         })
 
     except Exception as e:
-        current_app.logger.error(f"Critical error in voice query pipeline: {str(e)}")
+        current_app.logger.error(f"Error in voice query pipeline: {str(e)}", exc_info=True)
         return jsonify({
             'success': False,
-            'error': f"Failed to complete offline voice query pipeline: {str(e)}"
+            'error': 'Voice intelligence request could not be completed. Please verify audio input and try again.'
         }), 500
         
     finally:

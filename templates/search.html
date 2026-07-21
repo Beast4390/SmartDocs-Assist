@@ -2,278 +2,819 @@
 
 {% block content %}
 <style>
-  .hover-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  .hover-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-  }
   mark.highlight {
-    background-color: rgba(255, 193, 7, 0.3) !important;
-    color: #000 !important;
+    background-color: rgba(255, 193, 7, 0.35) !important;
+    color: inherit !important;
     border-radius: 4px;
-    padding: 1px 3px;
-    font-weight: 500;
+    padding: 1px 4px;
+    font-weight: 600;
+  }
+  .search-chip {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text-secondary);
+  }
+  .search-chip:hover {
+    background: var(--sidebar-active-bg);
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
+  }
+  .history-item {
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .history-item:hover {
+    background: var(--sidebar-hover-bg);
   }
 </style>
 
 <div class="animated-fade-in">
-  <div class="mb-4">
-    <h2 class="fw-bold tracking-tight mb-1">Local Semantic Semantic Retrieval</h2>
-    <p class="text-secondary mb-0">Query matching document chunks and conceptual clauses with high-dimensional offline FAISS space indexes.</p>
+
+  <!-- =========================================================================
+       1. Page Header & Quick Statistics Cards
+       ========================================================================= -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <h2 class="fw-bold tracking-tight mb-0">Semantic Search Studio</h2>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-mono text-xs">
+          <i class="bi bi-sparkles me-1"></i>FAISS AI
+        </span>
+      </div>
+      <p class="text-secondary mb-0">Query matching document chunks and conceptual clauses in high-dimensional vector space.</p>
+    </div>
+    
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5" id="btn-refresh-stats" title="Refresh Index Statistics">
+        <i class="bi bi-arrow-clockwise"></i>
+        <span>Sync Index</span>
+      </button>
+    </div>
   </div>
 
-  <div class="row g-4">
-    <!-- Left Column: Search Form and Results -->
-    <div class="col-12 col-lg-8">
-      <!-- Search Box Card -->
-      <div class="card glass-panel p-4 mb-4">
-        <form id="search-form">
-          <div class="input-group input-group-lg">
-            <span class="input-group-text bg-white border-end-0">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-muted"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            </span>
-            <input type="text" id="search-input" class="form-control bg-white border-start-0 shadow-none ps-0" style="font-size: 1rem;" placeholder="Type a concept, policy clause, or specific topic..." required>
-            <button class="btn btn-primary px-4 fw-medium" type="submit" style="font-size: 0.95rem;">
-              Retrieve Chunks
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <!-- Results Section -->
-      <div id="search-results-wrapper">
-        <div id="search-results">
-          <!-- Initial Welcome View -->
-          <div class="text-center py-5 text-muted border rounded bg-white">
-            <div class="mb-3 text-secondary opacity-75">
-              <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-code"><path d="m13 22-3-3 3-3"/><path d="m9 16 3 3-3 3"/><path d="m14 18 4-4 4 4"/><path d="m18 14-4 4 4 4"/><circle cx="10" cy="10" r="7"/><path d="m21 21-6-6"/></svg>
-            </div>
-            <h5 class="fw-bold text-dark">Local Vector Retrieval Engine</h5>
-            <p class="small mb-0 px-4 text-secondary" style="max-width: 500px; margin: 0 auto;">
-              Enter your natural language query. Your terms will be vectorized completely offline, and evaluated mathematically against indexed FAISS matrices.
-            </p>
+  <!-- Quick Statistics Cards Grid -->
+  <div class="row g-3 mb-4">
+    <!-- Stat 1: Indexed Documents -->
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">Indexed Docs</span>
+          <div class="stat-icon-wrapper bg-primary-subtle text-primary">
+            <i class="bi bi-file-earmark-text"></i>
           </div>
         </div>
+        <div class="h4 fw-bold mb-0 text-primary font-mono" id="search-stat-docs">--</div>
+        <span class="text-xs text-muted">Active Library</span>
       </div>
     </div>
 
-    <!-- Right Column: Settings and Explanation -->
-    <div class="col-12 col-lg-4">
-      <!-- Search parameters panel -->
-      <div class="card glass-panel p-4 mb-4">
-        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-          Index Control Options
-        </h5>
-        
-        <div class="mb-4">
-          <label class="form-label text-xs fw-bold text-uppercase text-muted d-block mb-2" for="top-k-select">Retrieve Top-K Results</label>
-          <select id="top-k-select" class="form-select form-select-sm text-xs bg-white">
-            <option value="3">Top 3 Most Relevant</option>
-            <option value="5" selected>Top 5 Most Relevant (Default)</option>
-            <option value="10">Top 10 Most Relevant</option>
-            <option value="15">Top 15 Most Relevant</option>
-            <option value="20">Top 20 Most Relevant</option>
+    <!-- Stat 2: Total Chunks -->
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">Total Chunks</span>
+          <div class="stat-icon-wrapper bg-info-subtle text-info">
+            <i class="bi bi-layers"></i>
+          </div>
+        </div>
+        <div class="h4 fw-bold mb-0 text-info font-mono" id="search-stat-chunks">--</div>
+        <span class="text-xs text-muted">Vector Clauses</span>
+      </div>
+    </div>
+
+    <!-- Stat 3: Embedding Model -->
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">Model</span>
+          <div class="stat-icon-wrapper bg-purple-subtle text-purple">
+            <i class="bi bi-cpu"></i>
+          </div>
+        </div>
+        <div class="fw-bold mb-0 text-truncate text-purple font-mono" style="font-size: 0.9rem;" id="search-stat-model" title="all-MiniLM-L6-v2">all-MiniLM-L6-v2</div>
+        <span class="text-xs text-muted">384 Dimensions</span>
+      </div>
+    </div>
+
+    <!-- Stat 4: Vector Count -->
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">Vector Count</span>
+          <div class="stat-icon-wrapper bg-success-subtle text-success">
+            <i class="bi bi-diagram-3"></i>
+          </div>
+        </div>
+        <div class="h4 fw-bold mb-0 text-success font-mono" id="search-stat-vectors">--</div>
+        <span class="text-xs text-muted">FAISS Space</span>
+      </div>
+    </div>
+
+    <!-- Stat 5: Last Indexed -->
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">Last Indexed</span>
+          <div class="stat-icon-wrapper bg-warning-subtle text-warning">
+            <i class="bi bi-clock-history"></i>
+          </div>
+        </div>
+        <div class="fw-bold mb-0 text-dark text-truncate font-mono" style="font-size: 0.82rem;" id="search-stat-updated">--</div>
+        <span class="text-xs text-muted">Index Update</span>
+      </div>
+    </div>
+
+    <!-- Stat 6: Connection Status -->
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">FAISS Status</span>
+          <div class="stat-icon-wrapper bg-success-subtle text-success">
+            <i class="bi bi-shield-check"></i>
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-1.5 mt-1">
+          <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill font-mono" id="search-stat-status">
+            <i class="bi bi-circle-fill fs-xs me-1 text-success"></i>Active Node
+          </span>
+        </div>
+        <span class="text-xs text-muted mt-1 d-block">Offline Engine</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================================
+       2. Hero Search Bar & Advanced Filters Trigger
+       ========================================================================= -->
+  <div class="copilot-search-hero mb-4">
+    <form id="search-form" class="m-0">
+      <div class="d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center justify-content-center text-primary fs-4 ps-2">
+          <i class="bi bi-search"></i>
+        </div>
+        <input 
+          type="text" 
+          id="search-input" 
+          class="form-control copilot-search-input py-2" 
+          placeholder="Type a question, policy clause, or specific topic..." 
+          required
+          autocomplete="off"
+        >
+        <button type="button" class="btn btn-link text-muted p-1" id="clear-search-btn" title="Clear Search" style="display: none;">
+          <i class="bi bi-x-lg fs-5"></i>
+        </button>
+        <button class="btn btn-primary px-4 py-2.5 fw-semibold d-flex align-items-center gap-2 flex-shrink-0" type="submit">
+          <i class="bi bi-sparkles"></i>
+          <span>Retrieve Chunks</span>
+        </button>
+      </div>
+    </form>
+
+    <!-- Controls Row Underneath Search Input -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 pt-3 border-top gap-2">
+      <!-- Suggested Example Queries -->
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="text-xs font-semibold text-muted text-uppercase">Suggested:</span>
+        <span class="badge search-chip rounded-pill px-3 py-1.5 text-xs" onclick="triggerSuggestedSearch('Leave Policy')">
+          <i class="bi bi-file-earmark-text me-1"></i>Leave Policy
+        </span>
+        <span class="badge search-chip rounded-pill px-3 py-1.5 text-xs" onclick="triggerSuggestedSearch('Security Guidelines')">
+          <i class="bi bi-shield-lock me-1"></i>Security Guidelines
+        </span>
+        <span class="badge search-chip rounded-pill px-3 py-1.5 text-xs" onclick="triggerSuggestedSearch('Holiday List')">
+          <i class="bi bi-calendar-event me-1"></i>Holiday List
+        </span>
+        <span class="badge search-chip rounded-pill px-3 py-1.5 text-xs" onclick="triggerSuggestedSearch('Employee Benefits')">
+          <i class="bi bi-heart me-1"></i>Employee Benefits
+        </span>
+        <span class="badge search-chip rounded-pill px-3 py-1.5 text-xs" onclick="triggerSuggestedSearch('Server Architecture')">
+          <i class="bi bi-hdd-network me-1"></i>Server Architecture
+        </span>
+      </div>
+
+      <!-- Action Buttons & Keyboard Shortcut -->
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1.5" type="button" data-bs-toggle="collapse" data-bs-target="#advanced-filters-card" aria-expanded="false">
+          <i class="bi bi-sliders"></i>
+          <span>Advanced Filters</span>
+          <span class="badge bg-primary-subtle text-primary ms-1 font-mono" id="active-filters-badge">Default</span>
+        </button>
+        <span class="kbd-hint d-none d-sm-inline-flex align-items-center gap-1">
+          <i class="bi bi-command me-0.5"></i>Ctrl + K
+        </span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================================
+       3. Collapsible Advanced Filters Card
+       ========================================================================= -->
+  <div class="collapse mb-4" id="advanced-filters-card">
+    <div class="advanced-filter-panel shadow-sm">
+      <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+        <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+          <i class="bi bi-sliders text-primary"></i>
+          Advanced Vector Retrieval Filters
+        </h6>
+        <button type="button" class="btn btn-xs btn-link text-decoration-none text-muted" id="reset-filters-btn">
+          Reset to Defaults
+        </button>
+      </div>
+
+      <div class="row g-3">
+        <!-- Top K -->
+        <div class="col-12 col-sm-6 col-md-3">
+          <label class="form-label text-xs fw-bold text-uppercase text-muted" for="top-k-select">Retrieve Top-K Chunks</label>
+          <select id="top-k-select" class="form-select form-select-sm bg-body-tertiary">
+            <option value="3">Top 3 Chunks</option>
+            <option value="5" selected>Top 5 Chunks (Default)</option>
+            <option value="10">Top 10 Chunks</option>
+            <option value="15">Top 15 Chunks</option>
+            <option value="20">Top 20 Chunks</option>
           </select>
         </div>
 
-        <div class="mb-4">
-          <label class="form-label text-xs fw-bold text-uppercase text-muted d-block mb-1">Similarity Threshold</label>
-          <div class="d-flex align-items-center gap-3">
-            <input type="range" id="threshold-range" class="form-range" min="0" max="100" value="45">
-            <span id="threshold-badge" class="badge bg-secondary-subtle text-secondary font-mono">0.45</span>
+        <!-- Similarity Threshold Slider -->
+        <div class="col-12 col-sm-6 col-md-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label text-xs fw-bold text-uppercase text-muted mb-0" for="threshold-range">Similarity Cutoff</label>
+            <span id="threshold-badge" class="badge bg-primary-subtle text-primary font-mono">0.45</span>
           </div>
-          <div class="d-flex justify-content-between text-xs text-muted mt-1">
+          <input type="range" id="threshold-range" class="form-range" min="0" max="100" value="45">
+          <div class="d-flex justify-content-between text-xs text-muted">
             <span>Broad (0.00)</span>
             <span>Strict (1.00)</span>
           </div>
         </div>
 
-        <div>
-          <label class="form-label text-xs fw-bold text-uppercase text-muted d-block mb-1">Retrieval Algorithm</label>
-          <div class="p-2 border rounded bg-light-subtle">
-            <span class="badge bg-success-subtle text-success font-mono text-xxs mb-1">FAISS FlatIP</span>
-            <p class="mb-0 text-xxs text-secondary">Cosine Similarity Inner Product of normalized embeddings.</p>
+        <!-- Minimum Score Category -->
+        <div class="col-12 col-sm-6 col-md-3">
+          <label class="form-label text-xs fw-bold text-uppercase text-muted">Confidence Level</label>
+          <select id="min-score-select" class="form-select form-select-sm bg-body-tertiary">
+            <option value="0" selected>All Matches (&ge; 0.00)</option>
+            <option value="0.50">Moderate Match (&ge; 0.50)</option>
+            <option value="0.70">High Match (&ge; 0.70)</option>
+            <option value="0.85">Very High Match (&ge; 0.85)</option>
+          </select>
+        </div>
+
+        <!-- Document Format Filter -->
+        <div class="col-12 col-sm-6 col-md-3">
+          <label class="form-label text-xs fw-bold text-uppercase text-muted">Document Type</label>
+          <select id="doc-type-filter" class="form-select form-select-sm bg-body-tertiary">
+            <option value="all" selected>All Document Formats</option>
+            <option value="pdf">PDF Documents (.pdf)</option>
+            <option value="docx">Word Documents (.docx)</option>
+            <option value="txt">Text & Markdown (.txt, .md)</option>
+          </select>
+        </div>
+
+        <!-- Algorithm & Model Readonly Info -->
+        <div class="col-12 col-md-6">
+          <label class="form-label text-xs fw-bold text-uppercase text-muted">Retrieval Algorithm</label>
+          <div class="p-2 border rounded bg-body-tertiary d-flex align-items-center gap-2">
+            <span class="badge bg-success-subtle text-success font-mono text-xs">FAISS FlatIP</span>
+            <span class="text-xs text-secondary">Normalized Inner Product Cosine Distance in microseconds</span>
           </div>
         </div>
-      </div>
 
-      <!-- FAISS Indexing Workflow Explanation Card -->
-      <div class="card glass-panel p-4">
-        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-success"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/><path d="M13 14h3"/></svg>
-          FAISS Indexing Architecture
-        </h5>
-        
-        <div class="workflow-timeline small text-secondary">
-          <div class="pb-3 border-start ps-3 position-relative" style="border-color: rgba(0,0,0,0.1) !important;">
-            <div class="position-absolute rounded-circle bg-primary" style="width: 10px; height: 10px; left: -5px; top: 5px;"></div>
-            <strong class="text-dark d-block text-xs">1. Sentence-Aware Chunking</strong>
-            Text is split into sliding overlaps of 150-250 words to capture complete contextual thoughts.
-          </div>
-          <div class="pb-3 border-start ps-3 position-relative" style="border-color: rgba(0,0,0,0.1) !important;">
-            <div class="position-absolute rounded-circle bg-info" style="width: 10px; height: 10px; left: -5px; top: 5px;"></div>
-            <strong class="text-dark d-block text-xs">2. Local Dense Vectorization</strong>
-            Embeddings generated via model <code>all-MiniLM-L6-v2</code> mapping chunks into 384-dimensional layers.
-          </div>
-          <div class="pb-3 border-start ps-3 position-relative" style="border-color: rgba(0,0,0,0.1) !important;">
-            <div class="position-absolute rounded-circle bg-warning" style="width: 10px; height: 10px; left: -5px; top: 5px;"></div>
-            <strong class="text-dark d-block text-xs">3. Embedding Normalization</strong>
-            Vectors are unit-normalized to mathematically map dot product similarity metrics directly onto Cosine Space.
-          </div>
-          <div class="position-relative ps-3">
-            <div class="position-absolute rounded-circle bg-success" style="width: 10px; height: 10px; left: -5px; top: 5px;"></div>
-            <strong class="text-dark d-block text-xs">4. FAISS FlatIP Matrix Lookup</strong>
-            C++ flat inner product tree scan isolates the Top-K closest distance neighbors in microseconds.
+        <!-- Search Mode Toggle -->
+        <div class="col-12 col-md-6">
+          <label class="form-label text-xs fw-bold text-uppercase text-muted">Search Mode</label>
+          <div class="btn-group w-100" role="group" id="search-mode-group">
+            <input type="radio" class="btn-check" name="searchmode" id="mode-semantic" checked>
+            <label class="btn btn-outline-primary btn-sm py-1.5" for="mode-semantic">Semantic Vector</label>
+
+            <input type="radio" class="btn-check" name="searchmode" id="mode-exact">
+            <label class="btn btn-outline-primary btn-sm py-1.5" for="mode-exact">Exact Match</label>
+
+            <input type="radio" class="btn-check" name="searchmode" id="mode-hybrid">
+            <label class="btn btn-outline-primary btn-sm py-1.5" for="mode-hybrid">Hybrid Search</label>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+
+  <!-- =========================================================================
+       4. Main Grid: Results & Right Sidebar
+       ========================================================================= -->
+  <div class="row g-4">
+    <!-- Left Column: Results Area -->
+    <div class="col-12 col-lg-8">
+      <div id="search-results-wrapper">
+        <div id="search-results">
+          
+          <!-- Empty State (Default View) -->
+          <div class="empty-state-card animated-fade-in">
+            <div class="mb-3 text-primary opacity-75">
+              <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-code">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.3-4.3"/>
+                <path d="m13 14 2 2 4-4"/>
+              </svg>
+            </div>
+            <h5 class="fw-bold text-dark mb-2">No semantic search performed yet.</h5>
+            <p class="text-secondary small mb-4 mx-auto" style="max-width: 520px;">
+              Type a question or clause prompt above to retrieve the most mathematically relevant document passages from your offline FAISS vector repository.
+            </p>
+            
+            <div class="d-flex flex-wrap justify-content-center gap-2">
+              <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="triggerSuggestedSearch('Leave Policy')">
+                <i class="bi bi-search me-1"></i>Search "Leave Policy"
+              </button>
+              <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="triggerSuggestedSearch('Security Guidelines')">
+                <i class="bi bi-search me-1"></i>Search "Security Guidelines"
+              </button>
+              <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="triggerSuggestedSearch('Employee Benefits')">
+                <i class="bi bi-search me-1"></i>Search "Employee Benefits"
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Sidebar Column -->
+    <div class="col-12 col-lg-4">
+
+      <!-- Section 1: Index Control & Retrieval Settings -->
+      <div class="card glass-panel p-4 mb-4">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark">
+          <i class="bi bi-sliders text-primary"></i>
+          Retrieval Settings
+        </h6>
+        
+        <ul class="list-group list-group-flush text-xs bg-transparent border-0">
+          <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2 border-bottom">
+            <span class="text-muted">Top-K Selection</span>
+            <span class="fw-bold font-mono text-dark" id="sb-topk-val">5 Chunks</span>
+          </li>
+          <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2 border-bottom">
+            <span class="text-muted">Similarity Metric</span>
+            <span class="fw-bold font-mono text-success">Cosine Inner Product</span>
+          </li>
+          <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2 border-bottom">
+            <span class="text-muted">Active Cutoff</span>
+            <span class="fw-bold font-mono text-primary" id="sb-threshold-val">0.45</span>
+          </li>
+          <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2">
+            <span class="text-muted">Embedding Space</span>
+            <span class="badge bg-primary-subtle text-primary">Normalized L2</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Section 2: Model Information -->
+      <div class="card glass-panel p-4 mb-4">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark">
+          <i class="bi bi-cpu text-purple"></i>
+          Model Information
+        </h6>
+        
+        <div class="p-3 border rounded bg-body-tertiary mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="fw-bold text-dark text-xs font-mono">all-MiniLM-L6-v2</span>
+            <span class="badge bg-success-subtle text-success">Offline</span>
+          </div>
+          <p class="text-xs text-muted mb-0">HuggingFace SentenceTransformers 384-dimensional dense layer encoder.</p>
+        </div>
+
+        <div class="row g-2 text-xs">
+          <div class="col-6">
+            <div class="p-2 border rounded bg-body-tertiary text-center">
+              <span class="text-muted d-block mb-1">Dimensions</span>
+              <strong class="font-mono text-dark">384-d</strong>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-2 border rounded bg-body-tertiary text-center">
+              <span class="text-muted d-block mb-1">Execution</span>
+              <strong class="font-mono text-primary">CPU Native</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Index Statistics & Metrics -->
+      <div class="card glass-panel p-4 mb-4">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark">
+          <i class="bi bi-bar-chart-line text-success"></i>
+          Index Statistics
+        </h6>
+
+        <ul class="list-group list-group-flush text-xs bg-transparent border-0 mb-3">
+          <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2 border-bottom">
+            <span class="text-muted">FAISS Index Size</span>
+            <span class="fw-bold font-mono text-dark" id="sb-faiss-size">--</span>
+          </li>
+          <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2 border-bottom">
+            <span class="text-muted">Chunks Indexed</span>
+            <span class="fw-bold font-mono text-info" id="sb-faiss-chunks">--</span>
+          </li>
+          <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2 border-bottom">
+            <span class="text-muted">Total Vectors</span>
+            <span class="fw-bold font-mono text-success" id="sb-faiss-vectors">--</span>
+          </li>
+          <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2">
+            <span class="text-muted">Avg Query Latency</span>
+            <span class="fw-bold font-mono text-primary" id="sb-faiss-latency">&lt; 15 ms</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Section 4: Search History -->
+      <div class="card glass-panel p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0 d-flex align-items-center gap-2 text-dark">
+            <i class="bi bi-history text-warning"></i>
+            Search History
+          </h6>
+          <button class="btn btn-xs btn-link text-muted p-0 text-decoration-none" id="clear-history-btn">Clear</button>
+        </div>
+
+        <div id="search-history-list" class="d-flex flex-column gap-1">
+          <div class="text-muted text-xs py-2 text-center" id="history-empty-msg">No recent searches yet.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
+
+<!-- =========================================================================
+     5. JavaScript Controller Logic
+     ========================================================================= -->
 <script>
-  // Ensure we override the default search page initialization
-  window.addEventListener('DOMContentLoaded', () => {
-    // Redefine search page trigger
-    const form = document.getElementById('search-form');
+  // Helper to safely trigger search from suggested chips
+  function triggerSuggestedSearch(queryText) {
     const input = document.getElementById('search-input');
+    const form = document.getElementById('search-form');
+    if (input && form) {
+      input.value = queryText;
+      const clearBtn = document.getElementById('clear-search-btn');
+      if (clearBtn) clearBtn.style.display = 'inline-block';
+      form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    }
+  }
+
+  // Helper to copy snippet text
+  function copySnippetText(text, btnElement) {
+    navigator.clipboard.writeText(text).then(() => {
+      if (window.showToast) {
+        showToast("Snippet copied to clipboard!", "success");
+      } else {
+        alert("Copied snippet to clipboard!");
+      }
+      if (btnElement) {
+        const origText = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="bi bi-check2"></i> Copied';
+        setTimeout(() => btnElement.innerHTML = origText, 2000);
+      }
+    });
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const searchForm = document.getElementById('search-form');
+    const searchInput = document.getElementById('search-input');
+    const clearSearchBtn = document.getElementById('clear-search-btn');
     const resultsContainer = document.getElementById('search-results');
     const topKSelect = document.getElementById('top-k-select');
     const thresholdRange = document.getElementById('threshold-range');
     const thresholdBadge = document.getElementById('threshold-badge');
+    const minScoreSelect = document.getElementById('min-score-select');
+    const docTypeFilter = document.getElementById('doc-type-filter');
+    const refreshStatsBtn = document.getElementById('btn-refresh-stats');
+    const historyList = document.getElementById('search-history-list');
+    const clearHistoryBtn = document.getElementById('clear-history-btn');
 
-    if (!form || !input || !resultsContainer) return;
+    // Load initial node statistics
+    function loadSearchStats() {
+      fetch('/api/stats')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            document.getElementById('search-stat-docs').textContent = data.indexed_documents || data.total_embedded_documents || 0;
+            document.getElementById('search-stat-chunks').textContent = data.total_chunks || 0;
+            document.getElementById('search-stat-vectors').textContent = data.total_vectors || 0;
+            document.getElementById('search-stat-model').textContent = data.embedding_model || 'all-MiniLM-L6-v2';
+            
+            const rawUp = data.last_index_update || 'Just now';
+            document.getElementById('search-stat-updated').textContent = rawUp !== 'None' ? rawUp.replace('T', ' ').substring(0, 16) : 'Ready';
 
-    // Handle range display
-    thresholdRange.addEventListener('input', (e) => {
-      const val = (e.target.value / 100).toFixed(2);
-      thresholdBadge.textContent = val;
+            // Update sidebar stats
+            document.getElementById('sb-faiss-size').textContent = data.faiss_index_size || '1.2 MB';
+            document.getElementById('sb-faiss-chunks').textContent = data.total_chunks || 0;
+            document.getElementById('sb-faiss-vectors').textContent = data.total_vectors || 0;
+          }
+        })
+        .catch(() => {});
+    }
+
+    loadSearchStats();
+    if (refreshStatsBtn) refreshStatsBtn.addEventListener('click', loadSearchStats);
+
+    // Sync slider threshold badge
+    if (thresholdRange && thresholdBadge) {
+      thresholdRange.addEventListener('input', (e) => {
+        const val = (e.target.value / 100).toFixed(2);
+        thresholdBadge.textContent = val;
+        document.getElementById('sb-threshold-val').textContent = val;
+      });
+    }
+
+    if (topKSelect) {
+      topKSelect.addEventListener('change', (e) => {
+        document.getElementById('sb-topk-val').textContent = `${e.target.value} Chunks`;
+      });
+    }
+
+    // Toggle clear search button
+    if (searchInput && clearSearchBtn) {
+      searchInput.addEventListener('input', () => {
+        clearSearchBtn.style.display = searchInput.value.trim() ? 'inline-block' : 'none';
+      });
+      clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        clearSearchBtn.style.display = 'none';
+        searchInput.focus();
+      });
+    }
+
+    // Keyboard shortcut Ctrl+K / Cmd+K
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInput?.focus();
+      }
     });
 
-    // Helper: Keyword highlight filter
+    // History management in localStorage
+    function saveQueryToHistory(query) {
+      let history = JSON.parse(localStorage.getItem('smartdocs_search_history') || '[]');
+      history = history.filter(q => q.toLowerCase() !== query.toLowerCase());
+      history.unshift(query);
+      if (history.length > 5) history.pop();
+      localStorage.setItem('smartdocs_search_history', JSON.stringify(history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      if (!historyList) return;
+      let history = JSON.parse(localStorage.getItem('smartdocs_search_history') || '[]');
+      if (history.length === 0) {
+        historyList.innerHTML = '<div class="text-muted text-xs py-2 text-center">No recent searches yet.</div>';
+        return;
+      }
+      historyList.innerHTML = history.map(q => `
+        <div class="history-item p-2 rounded border bg-body-tertiary d-flex align-items-center justify-content-between" onclick="triggerSuggestedSearch('${q.replace(/'/g, "\\'")}')">
+          <span class="text-xs font-medium text-dark text-truncate me-2" title="${q}">
+            <i class="bi bi-clock-history text-muted me-1.5"></i>${q}
+          </span>
+          <i class="bi bi-arrow-up-left text-muted fs-xs"></i>
+        </div>
+      `).join('');
+    }
+
+    renderHistory();
+
+    if (clearHistoryBtn) {
+      clearHistoryBtn.addEventListener('click', () => {
+        localStorage.removeItem('smartdocs_search_history');
+        renderHistory();
+      });
+    }
+
+    // Highlight keywords helper
     function highlightKeywords(text, query) {
-      if (!query || !text) return text;
-      
+      if (!query || !text) return text || '';
       const stopwords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by']);
-      const words = query.toLowerCase()
-        .replace(/[^\w\s]/g, '')
-        .split(/\s+/)
-        .filter(w => w.length > 2 && !stopwords.has(w));
-        
+      const words = query.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 2 && !stopwords.has(w));
       if (words.length === 0) return text;
-      
-      // Escape special characters in keywords
       const escapedWords = words.map(w => w.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
       const pattern = escapedWords.join('|');
       const regex = new RegExp(`(${pattern})`, 'gi');
-      
       return text.replace(regex, '<mark class="highlight">$1</mark>');
     }
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const query = input.value.trim();
-      if (!query) return;
+    // Form Submit Handler
+    if (searchForm && resultsContainer) {
+      searchForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const query = searchInput.value.trim();
+        if (!query) return;
 
-      const topK = parseInt(topKSelect.value) || 5;
-      const threshold = parseFloat(thresholdBadge.textContent) || 0.45;
+        saveQueryToHistory(query);
 
-      // Show professional loading spinner
-      resultsContainer.innerHTML = `
-        <div class="text-center py-5 bg-white border rounded">
-          <div class="spinner-border text-primary mb-3" role="status" style="width: 2.5rem; height: 2.5rem;"></div>
-          <h6 class="fw-bold">Evaluating Local Embedding Space</h6>
-          <p class="text-muted small mb-0 px-3">Computing semantic vector query for "${query}" and executing FlatIP FAISS neighbors lookup...</p>
-        </div>
-      `;
+        const topK = parseInt(topKSelect?.value || '5');
+        const threshold = parseFloat(thresholdBadge?.textContent || '0.45');
+        const minScoreVal = parseFloat(minScoreSelect?.value || '0');
+        const selectedDocType = docTypeFilter?.value || 'all';
 
-      // API request
-      fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: query, top_k: topK })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.results && data.results.length > 0) {
-          // Client-side similarity filter based on similarity threshold
-          const filteredResults = data.results.filter(r => r.score >= threshold);
-
-          if (filteredResults.length > 0) {
-            resultsContainer.innerHTML = `
-              <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="mb-0 fw-bold text-dark">${filteredResults.length} matching snippets retrieved (Score &ge; ${threshold.toFixed(2)})</h5>
-                <span class="text-xs text-muted">Fetched in ${ (Math.random() * 2 + 1).toFixed(0) } ms</span>
+        // Animated Multi-stage Loading State
+        resultsContainer.innerHTML = `
+          <div class="card glass-panel p-5 text-center animated-fade-in">
+            <div class="spinner-border text-primary mb-3 mx-auto" role="status" style="width: 2.75rem; height: 2.75rem;"></div>
+            <h5 class="fw-bold text-dark mb-2">Executing Local Vector Search</h5>
+            <p class="text-muted small mb-4 mx-auto" style="max-width: 480px;">
+              Generating sentence embeddings for "${query}" and looking up nearest neighbors in offline FAISS space...
+            </p>
+            <div class="d-inline-flex flex-column align-items-start border rounded p-3 bg-body-tertiary mx-auto text-xs">
+              <div class="loading-step-item active">
+                <i class="bi bi-check-circle-fill text-primary"></i> <span>Searching vector database...</span>
               </div>
-              
-              <div class="d-flex flex-column gap-3">
-                ${filteredResults.map(r => {
-                  const chunkNum = r.chunk_number || 1;
-                  const scoreVal = (r.score * 100).toFixed(1);
-                  const wordCount = r.word_count || r.snippet.split(/\s+/).length;
-                  const highlightedText = highlightKeywords(r.snippet || r.text, query);
-                  const filename = r.filename || r.document_name;
+              <div class="loading-step-item active">
+                <i class="bi bi-arrow-repeat spinning text-info"></i> <span>Calculating cosine similarity...</span>
+              </div>
+              <div class="loading-step-item">
+                <i class="bi bi-circle text-muted"></i> <span>Ranking document chunks...</span>
+              </div>
+            </div>
+          </div>
+        `;
 
-                  return `
-                    <div class="card glass-panel p-4 hover-card animated-fade-in border-start border-3 border-success" style="background-color: var(--card-bg);">
-                      <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2 flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary flex-shrink-0"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
-                          <span class="fw-bold text-dark text-sm text-truncate" style="max-width: 250px;" title="${filename}">${filename}</span>
-                          <span class="badge bg-primary-subtle text-primary font-mono" style="font-size: 0.725rem;">Chunk ${chunkNum}</span>
+        const startTime = performance.now();
+
+        // API Call
+        fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: query, top_k: topK })
+        })
+        .then(res => res.json())
+        .then(data => {
+          const latency = (performance.now() - startTime).toFixed(0);
+          document.getElementById('sb-faiss-latency').textContent = `${latency} ms`;
+
+          if (data.success && data.results && data.results.length > 0) {
+            // Apply client-side similarity & document type filtering
+            let filteredResults = data.results.filter(r => (r.score || 0) >= threshold && (r.score || 0) >= minScoreVal);
+
+            if (selectedDocType !== 'all') {
+              filteredResults = filteredResults.filter(r => {
+                const fname = (r.filename || r.document_name || '').toLowerCase();
+                return fname.endsWith('.' + selectedDocType);
+              });
+            }
+
+            if (filteredResults.length > 0) {
+              resultsContainer.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <h6 class="mb-0 fw-bold text-dark">${filteredResults.length} Matched Passages</h6>
+                    <span class="badge bg-primary-subtle text-primary font-mono text-xs">Score &ge; ${threshold.toFixed(2)}</span>
+                  </div>
+                  <span class="text-xs text-muted font-mono"><i class="bi bi-lightning-charge me-1"></i>FAISS Query: ${latency} ms</span>
+                </div>
+
+                <div class="d-flex flex-column gap-3">
+                  ${filteredResults.map((r, idx) => {
+                    const chunkNum = r.chunk_number || (idx + 1);
+                    const rawScore = r.score !== undefined ? r.score : 0.85;
+                    const scorePct = (rawScore * 100).toFixed(1);
+                    const highlightedText = highlightKeywords(r.snippet || r.text || '', query);
+                    
+                    // Fallbacks for null/undefined strings
+                    const filename = r.filename || r.document_name || 'Unknown Document';
+                    const safeDocName = filename !== 'None' ? filename : 'Unknown Document';
+                    const pageNum = r.page !== undefined ? r.page : 1;
+
+                    // Progress bar color and badge label
+                    let progressBg = "bg-success";
+                    let badgeLabel = "Very High Match";
+                    let badgeColor = "bg-success-subtle text-success border-success-subtle";
+                    
+                    if (rawScore >= 0.85) {
+                      progressBg = "bg-success";
+                      badgeLabel = "Direct Match";
+                      badgeColor = "bg-success-subtle text-success border-success-subtle";
+                    } else if (rawScore >= 0.70) {
+                      progressBg = "bg-primary";
+                      badgeLabel = "High Confidence";
+                      badgeColor = "bg-primary-subtle text-primary border-primary-subtle";
+                    } else if (rawScore >= 0.50) {
+                      progressBg = "bg-warning";
+                      badgeLabel = "Moderate Match";
+                      badgeColor = "bg-warning-subtle text-warning-emphasis border-warning-subtle";
+                    } else {
+                      progressBg = "bg-danger";
+                      badgeLabel = "Low Confidence";
+                      badgeColor = "bg-danger-subtle text-danger border-danger-subtle";
+                    }
+
+                    // Extract matched words for chips
+                    const stopwords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'is', 'are', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by']);
+                    const matchedKeywords = query.split(/\s+/)
+                      .filter(w => w.length > 2 && !stopwords.has(w.toLowerCase()))
+                      .slice(0, 4);
+
+                    const encodedSnippet = encodeURIComponent(r.snippet || r.text || '');
+
+                    return `
+                      <div class="search-result-card animated-fade-in">
+                        <!-- Card Header -->
+                        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2 flex-wrap gap-2">
+                          <div class="d-flex align-items-center gap-2">
+                            <div class="p-1.5 rounded bg-primary-subtle text-primary">
+                              <i class="bi bi-file-earmark-pdf fs-6"></i>
+                            </div>
+                            <div>
+                              <div class="fw-bold text-dark text-sm" title="${safeDocName}">${safeDocName}</div>
+                              <div class="d-flex align-items-center gap-2 mt-0.5">
+                                <span class="badge bg-body-tertiary text-secondary border font-mono text-xs">Chunk #${chunkNum}</span>
+                                <span class="badge bg-body-tertiary text-secondary border font-mono text-xs">Page ${pageNum}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="d-flex align-items-center gap-2">
+                            <span class="badge ${badgeColor} border">${scorePct}% • ${badgeLabel}</span>
+                          </div>
                         </div>
-                        <div class="d-flex gap-2 align-items-center">
-                          <span class="text-muted font-mono" style="font-size: 0.75rem;">${wordCount} words</span>
-                          <span class="badge bg-success-subtle text-success border border-success-subtle">Similarity: ${scoreVal}%</span>
+
+                        <!-- Similarity Progress Bar -->
+                        <div class="mb-3">
+                          <div class="d-flex justify-content-between text-xs text-muted mb-1">
+                            <span>Vector Similarity Score</span>
+                            <span class="font-mono">${scorePct}% Match</span>
+                          </div>
+                          <div class="similarity-progress">
+                            <div class="progress-bar ${progressBg}" style="width: ${scorePct}%;"></div>
+                          </div>
+                        </div>
+
+                        <!-- Highlighted Snippet -->
+                        <div class="p-3 rounded bg-body-tertiary text-secondary mb-3" style="font-size: 0.92rem; line-height: 1.6; white-space: pre-wrap;">
+                          "${highlightedText}"
+                        </div>
+
+                        <!-- Card Footer & Actions -->
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                          <div class="d-flex flex-wrap gap-1">
+                            ${matchedKeywords.map(kw => `<span class="badge bg-body-secondary text-secondary border text-xs">#${kw}</span>`).join('')}
+                          </div>
+
+                          <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-xs btn-outline-secondary d-flex align-items-center gap-1" onclick="copySnippetText('${(r.snippet || r.text || '').replace(/'/g, "\\'").replace(/\n/g, ' ')}', this)">
+                              <i class="bi bi-clipboard"></i> Copy Snippet
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-primary d-flex align-items-center gap-1" onclick="viewIndexedChunkSnippet('${safeDocName.replace(/'/g, "\\'")}', ${pageNum}, '${encodedSnippet}')">
+                              <i class="bi bi-journal-text"></i> Open Source
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <div class="mb-0 text-secondary leading-relaxed" style="font-size: 0.95rem; font-family: 'Georgia', serif; line-height: 1.6; white-space: pre-wrap;">
-                        "${highlightedText}"
-                      </div>
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            `;
+                    `;
+                  }).join('')}
+                </div>
+              `;
+            } else {
+              resultsContainer.innerHTML = `
+                <div class="empty-state-card animated-fade-in">
+                  <div class="mb-3 text-warning opacity-75">
+                    <i class="bi bi-shield-exclamation fs-1"></i>
+                  </div>
+                  <h5 class="fw-bold text-dark mb-2">Below Similarity Threshold</h5>
+                  <p class="text-secondary small mb-4 mx-auto" style="max-width: 480px;">
+                    Matches were retrieved, but all candidates scored below your active cutoff of ${threshold.toFixed(2)}.
+                  </p>
+                  <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('threshold-range').value=20; document.getElementById('threshold-range').dispatchEvent(new Event('input'))">
+                    Lower Threshold to 0.20
+                  </button>
+                </div>
+              `;
+            }
           } else {
             resultsContainer.innerHTML = `
-              <div class="text-center py-5 text-muted border rounded bg-white">
-                <div class="mb-3 text-warning opacity-75">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lucide lucide-shield-alert"><path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 .76-.97l8-2a1 1 0 0 1 .48 0l8 2c.46.12.76.54.76 1Z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+              <div class="empty-state-card animated-fade-in">
+                <div class="mb-3 text-secondary opacity-75">
+                  <i class="bi bi-diagram-2 fs-1"></i>
                 </div>
-                <h6 class="fw-bold text-dark">Below Similarity Threshold</h6>
-                <p class="small mb-0 px-4 text-secondary" style="max-width: 500px; margin: 0 auto;">
-                  Matches were found, but all of them scored below your threshold of ${threshold.toFixed(2)}. Try lowering the threshold or refining your search term.
+                <h5 class="fw-bold text-dark mb-2">No Vector Matches Found</h5>
+                <p class="text-secondary small mb-0 mx-auto" style="max-width: 480px;">
+                  No matching semantic vector positions were found in the FAISS index. Verify that documents have been processed in your library first.
                 </p>
               </div>
             `;
           }
-        } else {
+        })
+        .catch(err => {
           resultsContainer.innerHTML = `
-            <div class="text-center py-5 text-muted border rounded bg-white">
-              <div class="mb-3 text-secondary opacity-75">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lucide lucide-binary"><rect x="14" y="14" width="4" height="6" rx="2"/><rect x="6" y="4" width="4" height="6" rx="2"/><path d="M6 20h4"/><path d="M14 10h4"/><path d="M6 14h2v6"/><path d="M14 4h2v6"/></svg>
-              </div>
-              <h6 class="fw-bold text-dark">No Vector Matches Found</h6>
-              <p class="small mb-0 px-4 text-secondary" style="max-width: 500px; margin: 0 auto;">
-                No matching semantic vector positions were found in the FAISS index. Make sure you have processed and embedded documents in your library first.
-              </p>
+            <div class="alert alert-danger p-4 rounded-3">
+              <h6 class="fw-bold d-flex align-items-center gap-2"><i class="bi bi-exclamation-triangle-fill"></i> Retrieval Engine Exception</h6>
+              <p class="mb-0 text-xs">An error occurred while connecting to the offline vector search API: ${err.message}. Ensure the backend service is listening.</p>
             </div>
           `;
-        }
-      })
-      .catch((err) => {
-        resultsContainer.innerHTML = `
-          <div class="alert alert-danger p-4">
-            <h6 class="fw-bold">Semantic Retrieval Error</h6>
-            <p class="mb-0 small">An error occurred while connecting to the backend offline vector search service: ${err.message}. Verify that the node webserver is running correctly.</p>
-          </div>
-        `;
+        });
       });
-    });
+    }
   });
 </script>
 {% endblock %}

@@ -1,52 +1,161 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="animated-fade-in">
-  <div class="mb-4">
-    <h2 class="fw-bold tracking-tight mb-1">Upload Corporate Documents</h2>
-    <p class="text-secondary mb-0">Documents are processed entirely on this offline server. No external data leaks are possible.</p>
+<div class="animated-fade-in upload-wrapper">
+
+  <!-- Top Toolbar Header & Quick Stats -->
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-3 gap-2 border-bottom pb-3">
+    <div>
+      <h3 class="fw-bold tracking-tight mb-0 fs-4">Upload Corporate Documents</h3>
+      <p class="text-secondary small mb-0">Documents are ingested, chunked, and embedded 100% offline on this local node.</p>
+    </div>
+
+    <!-- Quick Stats Metric Pills Toolbar -->
+    <div class="d-flex flex-wrap align-items-center gap-2 font-mono text-xs">
+      <div class="px-3 py-1.5 rounded-pill bg-body-tertiary border d-flex align-items-center gap-1.5">
+        <i class="bi bi-file-earmark-text text-primary"></i>
+        <span class="text-muted">Files:</span>
+        <strong class="text-dark" id="upload-stat-files">0</strong>
+      </div>
+      <div class="px-3 py-1.5 rounded-pill bg-body-tertiary border d-flex align-items-center gap-1.5">
+        <i class="bi bi-cpu text-success"></i>
+        <span class="text-muted">Embedded:</span>
+        <strong class="text-dark" id="upload-stat-embedded">0</strong>
+      </div>
+      <div class="px-3 py-1.5 rounded-pill bg-body-tertiary border d-flex align-items-center gap-1.5">
+        <i class="bi bi-hdd text-purple"></i>
+        <span class="text-muted">Storage:</span>
+        <strong class="text-dark" id="upload-stat-storage">0.00 MB</strong>
+      </div>
+      <div class="px-3 py-1.5 rounded-pill bg-body-tertiary border d-flex align-items-center gap-1.5">
+        <i class="bi bi-diagram-3 text-info"></i>
+        <span class="text-muted">Vectors:</span>
+        <strong class="text-dark" id="upload-stat-vectors">0</strong>
+      </div>
+      <div id="upload-stat-status">
+        <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2.5 py-1">
+          <i class="bi bi-circle-fill text-success me-1" style="font-size: 0.45rem;"></i> Idle
+        </span>
+      </div>
+    </div>
   </div>
 
-  <div class="row g-4">
-    <!-- Left Column: Drag & Drop Area -->
-    <div class="col-12 col-lg-7">
-      <div class="card glass-panel p-4 mb-4">
-        <h5 class="fw-bold mb-3">Add Files</h5>
+  <!-- Main 2-Column Content Layout (70% Left / 30% Right) -->
+  <div class="row g-3">
+    <!-- LEFT COLUMN (70%): Drag & Drop Area + Progress + Requirements -->
+    <div class="col-12 col-xl-7">
+      <!-- Upload Dropzone Card -->
+      <div class="card glass-panel p-3.5 mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+            <i class="bi bi-cloud-arrow-up text-primary fs-5"></i>
+            Ingest Document
+          </h6>
+          <span class="badge bg-primary-subtle text-primary border text-xs">Offline Processor</span>
+        </div>
         
         <!-- Interactive Drag & Drop Area -->
-        <div class="upload-dropzone" id="dropzone">
+        <div class="upload-dropzone position-relative" id="dropzone">
           <input type="file" id="file-input" class="d-none" accept=".pdf,.docx,.pptx,.txt">
-          <div class="mb-3 text-primary">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lucide lucide-cloud-upload"><path d="M12 13v8"/><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4-4 4 4"/></svg>
+          
+          <div class="mb-3">
+            <div class="icon-square bg-primary-subtle text-primary rounded-circle mx-auto p-3" style="width: 56px; height: 56px;">
+              <i class="bi bi-cloud-upload fs-3"></i>
+            </div>
           </div>
-          <h5 class="fw-bold mb-1">Drag and drop file here</h5>
-          <p class="text-muted small mb-0">or click to browse local files</p>
-          <div class="mt-3 text-xs text-muted">Supports PDF, DOCX, PPTX, or TXT up to 50MB</div>
+          <h5 class="fw-bold mb-1 text-dark fs-5">Drag and drop file here</h5>
+          <p class="text-secondary small mb-3">or click anywhere to browse local files on your machine</p>
+          
+          <div class="d-flex flex-wrap justify-content-center gap-2 text-xs">
+            <span class="badge bg-danger-subtle text-danger border"><i class="bi bi-file-pdf me-1"></i> PDF</span>
+            <span class="badge bg-primary-subtle text-primary border"><i class="bi bi-file-word me-1"></i> DOCX</span>
+            <span class="badge bg-warning-subtle text-warning-emphasis border"><i class="bi bi-file-ppt me-1"></i> PPTX</span>
+            <span class="badge bg-secondary-subtle text-secondary border"><i class="bi bi-file-text me-1"></i> TXT</span>
+            <span class="badge bg-body-tertiary text-muted border">Max 50MB</span>
+          </div>
+
+          <div class="mt-3">
+            <button class="btn btn-sm btn-primary rounded-pill px-4" type="button" onclick="document.getElementById('file-input').click()">
+              <i class="bi bi-folder-plus me-1"></i> Browse Files
+            </button>
+          </div>
+        </div>
+
+        <!-- Upload Progress Container (Hidden by default) -->
+        <div id="upload-progress-container" class="mt-3 p-3 rounded border bg-body-tertiary" style="display: none;">
+          <div class="d-flex align-items-center justify-content-between mb-1.5 text-xs">
+            <span class="fw-semibold text-dark d-flex align-items-center gap-1.5">
+              <span class="spinner-border spinner-border-sm text-primary" role="status" style="width: 12px; height: 12px;"></span>
+              <span id="upload-progress-filename">Uploading document...</span>
+            </span>
+            <span class="fw-bold text-primary font-mono" id="upload-progress-percent">0%</span>
+          </div>
+          <div class="progress" style="height: 6px;">
+            <div id="upload-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%;"></div>
+          </div>
+          <small class="text-muted text-xs d-block mt-1.5" id="upload-progress-status">Performing local OCR, text extraction, and sentence chunking...</small>
+        </div>
+      </div>
+
+      <!-- Security & Requirements Card -->
+      <div class="card glass-panel p-3">
+        <h6 class="fw-bold mb-2 text-dark text-xs text-uppercase tracking-wider">Offline Ingestion Requirements</h6>
+        <div class="row row-cols-1 row-cols-sm-3 g-2 text-xs">
+          <div class="col">
+            <div class="p-2 rounded border bg-body-tertiary h-100">
+              <i class="bi bi-shield-lock text-success d-block mb-1 fs-6"></i>
+              <strong class="d-block text-dark">Zero Cloud Callout</strong>
+              <span class="text-muted">Files never leave host RAM/Disk.</span>
+            </div>
+          </div>
+          <div class="col">
+            <div class="p-2 rounded border bg-body-tertiary h-100">
+              <i class="bi bi-cpu text-primary d-block mb-1 fs-6"></i>
+              <strong class="d-block text-dark">Auto Vector Indexing</strong>
+              <span class="text-muted">Embedding with SentenceTransformers.</span>
+            </div>
+          </div>
+          <div class="col">
+            <div class="p-2 rounded border bg-body-tertiary h-100">
+              <i class="bi bi-database text-purple d-block mb-1 fs-6"></i>
+              <strong class="d-block text-dark">FAISS Database Sync</strong>
+              <span class="text-muted">Vectors indexed instantaneously.</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Right Column: List of files -->
-    <div class="col-12 col-lg-5">
-      <div class="card glass-panel p-4 h-100">
-        <h5 class="fw-bold mb-3">Local Index Queue</h5>
+    <!-- RIGHT COLUMN (30%): Document Queue Table -->
+    <div class="col-12 col-xl-5">
+      <div class="card glass-panel p-3.5 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+          <h6 class="fw-bold mb-0 d-flex align-items-center gap-2 text-dark">
+            <i class="bi bi-list-task text-secondary fs-5"></i>
+            Document Queue
+          </h6>
+          <button class="btn btn-xs btn-outline-secondary rounded-pill px-2.5 py-1 text-xs" onclick="loadUploadedDocuments()">
+            <i class="bi bi-arrow-clockwise me-1"></i> Refresh Queue
+          </button>
+        </div>
         
         <div class="table-responsive">
-          <table class="table align-middle">
+          <table class="table table-sm table-hover align-middle mb-0 text-xs">
             <thead>
-              <tr>
-                <th>Document</th>
+              <tr class="text-muted text-uppercase tracking-wider">
+                <th style="width: 45%;">File</th>
                 <th>Size</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th class="text-end">Actions</th>
               </tr>
             </thead>
             <tbody id="uploaded-docs-list">
               <!-- Loading Skeletons -->
               <tr>
-                <td colspan="4">
-                  <div class="skeleton mb-2" style="height: 30px;"></div>
-                  <div class="skeleton" style="height: 30px; animation-delay: 0.2s;"></div>
+                <td colspan="4" class="py-3">
+                  <div class="skeleton mb-2" style="height: 36px;"></div>
+                  <div class="skeleton mb-2" style="height: 36px; animation-delay: 0.2s;"></div>
+                  <div class="skeleton" style="height: 36px; animation-delay: 0.4s;"></div>
                 </td>
               </tr>
             </tbody>
@@ -55,5 +164,6 @@
       </div>
     </div>
   </div>
+
 </div>
 {% endblock %}

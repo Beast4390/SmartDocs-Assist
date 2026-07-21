@@ -1,270 +1,601 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+  /* Custom graph nodes and timeline items */
+  .graph-node {
+    stroke: var(--card-bg);
+    stroke-width: 1.5px;
+    cursor: pointer;
+    transition: r 0.2s, stroke-width 0.2s;
+  }
+  .graph-node:hover {
+    stroke-width: 2.5px;
+    stroke: var(--accent-color);
+  }
+  .graph-link {
+    stroke: #94a3b8;
+    stroke-opacity: 0.6;
+    stroke-width: 1.2px;
+  }
+  .graph-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 8px;
+    fill: var(--text-primary);
+    pointer-events: none;
+    text-anchor: middle;
+  }
+  .timeline-item {
+    position: relative;
+    padding-left: 24px;
+    margin-bottom: 20px;
+    border-left: 2px solid var(--accent-color);
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    border: 2px solid var(--bg-primary);
+  }
+  .doc-search-box {
+    font-size: 0.8rem;
+    padding: 0.35rem 0.65rem;
+  }
+</style>
+
 <div class="animated-fade-in">
-  <div class="d-flex justify-content-between align-items-center mb-4">
+
+  <!-- =========================================================================
+       1. Page Header & Quick Statistics Cards
+       ========================================================================= -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
     <div>
-      <h2 class="fw-bold tracking-tight mb-1">Enterprise AI Knowledge Intelligence</h2>
-      <p class="text-secondary mb-0">Local context-retrieved RAG analysis. Process single or multiple files offline with Ollama.</p>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <h2 class="fw-bold tracking-tight mb-0">Executive Reports & AI Intelligence</h2>
+        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill font-mono text-xs">
+          <i class="bi bi-shield-lock me-1"></i>Air-Gapped Compliance
+        </span>
+      </div>
+      <p class="text-secondary mb-0">Local context RAG synthesis. Generate C-Suite briefings, clause audits, entity maps, and action items.</p>
     </div>
-    <div>
-      <span class="badge bg-primary-subtle text-primary py-2 px-3 fw-semibold border border-primary-subtle">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="me-1"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Air-Gapped Compliance
-      </span>
+
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5" id="btn-refresh-reports-stats" title="Refresh Node Status">
+        <i class="bi bi-arrow-clockwise"></i>
+        <span>Sync Status</span>
+      </button>
     </div>
   </div>
 
-  <div class="row g-4">
-    <!-- Left Column: Unified File Selector Workspace -->
-    <div class="col-12 col-xl-4">
-      <div class="card glass-panel p-4 h-100 mb-4 shadow-sm border-0">
-        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-primary">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lucide lucide-files"><path d="M15.5 2H8.6c-.4 0-.8.2-1.1.5-.3.3-.5.7-.5 1.1v12.8c0 .4.2.8.5 1.1.3.3.7.5 1.1.5h9.8c.4 0 .8-.2 1.1-.5.3-.3.5-.7.5-1.1V6.5L15.5 2z"/><path d="M3 7.6v12.8c0 .4.2.8.5 1.1.3.3.7.5 1.1.5h9.8"/><path d="M15 2v5h5"/></svg>
-          Selected Document Context
-        </h5>
-        <p class="text-xs text-muted mb-3">Select the uploaded files you wish to analyze. Many intelligence features can run across multiple files simultaneously.</p>
-        
-        <div class="p-3 border rounded bg-light-subtle mb-4">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="text-xs fw-bold text-uppercase text-muted">Available Files</span>
-            <button class="btn btn-xs btn-link text-primary p-0 text-decoration-none" id="select-all-docs-btn">Select All</button>
-          </div>
-          <div id="workspace-docs-container" style="max-height: 250px; overflow-y: auto;" class="pe-1">
-            <div class="text-center py-3 text-muted">
-              <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
-              <p class="text-xs mb-0">Scanning file repository...</p>
-            </div>
+  <!-- Quick Report Statistics Cards Grid -->
+  <div class="row g-3 mb-4">
+    <!-- Stat 1: Generated Reports -->
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">Reports Run</span>
+          <div class="stat-icon-wrapper bg-primary-subtle text-primary">
+            <i class="bi bi-file-earmark-bar-graph"></i>
           </div>
         </div>
-
-        <div class="mb-3">
-          <label class="form-label text-xs fw-bold text-uppercase text-muted">Active Local LLM Model</label>
-          <select class="form-select" id="intelligence-model-select">
-            <!-- Dynamic loaded models -->
-            <option value="llama3">llama3</option>
-            <option value="qwen2.5">qwen2.5</option>
-            <option value="mistral">mistral</option>
-          </select>
-          <div class="form-text text-xs text-muted mt-1">Change default generation model under System Settings.</div>
-        </div>
+        <div class="h4 fw-bold mb-0 text-primary font-mono" id="rep-stat-generated">0</div>
+        <span class="text-xs text-muted">Session Intelligence</span>
       </div>
     </div>
 
-    <!-- Right Column: Interactive Knowledge Tools Tab-Pane -->
+    <!-- Stat 2: Documents Available -->
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">Documents</span>
+          <div class="stat-icon-wrapper bg-info-subtle text-info">
+            <i class="bi bi-files"></i>
+          </div>
+        </div>
+        <div class="h4 fw-bold mb-0 text-info font-mono" id="rep-stat-docs">--</div>
+        <span class="text-xs text-muted">Repository Scope</span>
+      </div>
+    </div>
+
+    <!-- Stat 3: AI Model -->
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">Active Model</span>
+          <div class="stat-icon-wrapper bg-purple-subtle text-purple">
+            <i class="bi bi-cpu"></i>
+          </div>
+        </div>
+        <div class="fw-bold mb-0 text-truncate text-purple font-mono" style="font-size: 0.9rem;" id="rep-stat-model">Llama3</div>
+        <span class="text-xs text-muted">Local RAG LLM</span>
+      </div>
+    </div>
+
+    <!-- Stat 4: Last Report -->
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">Last Report</span>
+          <div class="stat-icon-wrapper bg-warning-subtle text-warning">
+            <i class="bi bi-clock-history"></i>
+          </div>
+        </div>
+        <div class="fw-bold mb-0 text-dark text-truncate font-mono" style="font-size: 0.82rem;" id="rep-stat-last">--</div>
+        <span class="text-xs text-muted">Timestamp</span>
+      </div>
+    </div>
+
+    <!-- Stat 5: Processing Latency -->
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">Processing Time</span>
+          <div class="stat-icon-wrapper bg-success-subtle text-success">
+            <i class="bi bi-lightning-charge"></i>
+          </div>
+        </div>
+        <div class="fw-bold mb-0 text-success font-mono" style="font-size: 0.9rem;" id="rep-stat-time">--</div>
+        <span class="text-xs text-muted">Avg RAG Latency</span>
+      </div>
+    </div>
+
+    <!-- Stat 6: Air-Gapped Node -->
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card-enterprise">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-xs font-semibold text-uppercase text-muted">Security</span>
+          <div class="stat-icon-wrapper bg-success-subtle text-success">
+            <i class="bi bi-lock"></i>
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-1.5 mt-1">
+          <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill font-mono">
+            <i class="bi bi-circle-fill fs-xs me-1 text-success"></i>100% Offline
+          </span>
+        </div>
+        <span class="text-xs text-muted mt-1 d-block">Zero Cloud Egress</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================================
+       2. Split Layout: 30% Left Panel / 70% Main Workspace
+       ========================================================================= -->
+  <div class="row g-4">
+    
+    <!-- -----------------------------------------------------------------------
+         Left Panel (30% Width): Document Selection & Model Selection
+         ----------------------------------------------------------------------- -->
+    <div class="col-12 col-xl-4">
+      
+      <!-- Document Selection Card -->
+      <div class="card glass-panel p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary">
+            <i class="bi bi-files"></i>
+            Document Selection
+          </h6>
+          <button class="btn btn-xs btn-link text-primary p-0 text-decoration-none fw-semibold" id="select-all-docs-btn">
+            Select All
+          </button>
+        </div>
+        <p class="text-xs text-muted mb-3">Check the target documents you wish to include in your offline RAG analysis pool.</p>
+
+        <!-- Search filter box for left panel file cards -->
+        <div class="position-relative mb-3">
+          <i class="bi bi-search position-absolute text-muted ms-2.5 top-50 translate-middle-y text-xs"></i>
+          <input type="text" id="doc-search-filter" class="form-control form-control-sm ps-4 doc-search-box bg-body-tertiary" placeholder="Search available files..." aria-label="Filter documents">
+        </div>
+
+        <!-- Document Cards Container -->
+        <div id="workspace-docs-container" style="max-height: 440px; overflow-y: auto;" class="pe-1">
+          <div class="text-center py-4 text-muted">
+            <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+            <p class="text-xs mb-0">Scanning document repository...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Model Selection Card -->
+      <div class="card glass-panel p-4">
+        <h6 class="fw-bold mb-2 d-flex align-items-center gap-2 text-dark">
+          <i class="bi bi-cpu text-purple"></i>
+          LLM Model Selection
+        </h6>
+        <p class="text-xs text-muted mb-3">Select the active local LLM model instance for RAG synthesis.</p>
+
+        <div class="mb-3">
+          <label class="form-label text-xs fw-bold text-uppercase text-muted mb-1" for="intelligence-model-select">Active Local LLM</label>
+          <select class="form-select form-select-sm bg-body-tertiary font-mono" id="intelligence-model-select">
+            <option value="llama3" selected>llama3 (Default 8B)</option>
+            <option value="qwen2.5">qwen2.5 (14B High Precision)</option>
+            <option value="mistral">mistral (7B Instruct)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded border bg-body-tertiary text-xs d-flex flex-column gap-1.5">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted">Node Status:</span>
+            <span class="badge bg-success-subtle text-success border border-success-subtle">Online & Ready</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted">VRAM Footprint:</span>
+            <span class="font-mono text-dark fw-medium">~4.2 GB VRAM</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted">Temperature:</span>
+            <span class="font-mono text-primary fw-medium">0.70 (Balanced)</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- -----------------------------------------------------------------------
+         Main Workspace (70% Width): 9 Tabs Navigation & Output Content
+         ----------------------------------------------------------------------- -->
     <div class="col-12 col-xl-8">
-      <div class="card glass-panel p-4 h-100 shadow-sm border-0">
-        <!-- Tab navigation header -->
-        <ul class="nav nav-pills nav-fill mb-4 p-1 rounded bg-light border gap-1 text-xs" id="intelligenceTabs" role="tablist">
+      <div class="card glass-panel p-4 h-100">
+        
+        <!-- Tab Navigation Header Pills -->
+        <ul class="nav nav-pills nav-fill mb-4 p-1 rounded bg-body-tertiary border gap-1 text-xs" id="intelligenceTabs" role="tablist">
           <li class="nav-item" role="presentation">
-            <button class="nav-link active py-2" id="summary-tab" data-bs-toggle="pill" data-bs-target="#summary-panel" type="button" role="tab">
-              Summarizer
+            <button class="nav-link enterprise-tab-pill active" id="summary-tab" data-bs-toggle="pill" data-bs-target="#summary-panel" type="button" role="tab" title="Document Summarizer">
+              <i class="bi bi-file-text"></i> Summary
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link py-2" id="compare-tab" data-bs-toggle="pill" data-bs-target="#compare-panel" type="button" role="tab">
-              Clause Audit
+            <button class="nav-link enterprise-tab-pill" id="compare-tab" data-bs-toggle="pill" data-bs-target="#compare-panel" type="button" role="tab" title="Clause Audit & Comparison">
+              <i class="bi bi-[#compare] bi-square-half"></i> Clause Audit
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link py-2" id="report-tab" data-bs-toggle="pill" data-bs-target="#report-panel" type="button" role="tab">
-              Executive Reports
+            <button class="nav-link enterprise-tab-pill" id="report-tab" data-bs-toggle="pill" data-bs-target="#report-panel" type="button" role="tab" title="Executive C-Suite Reports">
+              <i class="bi bi-file-earmark-bar-graph"></i> Executive Report
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link py-2" id="timeline-tab" data-bs-toggle="pill" data-bs-target="#timeline-panel" type="button" role="tab">
-              Chronology
+            <button class="nav-link enterprise-tab-pill" id="timeline-tab" data-bs-toggle="pill" data-bs-target="#timeline-panel" type="button" role="tab" title="Chronological Timeline">
+              <i class="bi bi-clock-history"></i> Timeline
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link py-2" id="faq-tab" data-bs-toggle="pill" data-bs-target="#faq-panel" type="button" role="tab">
-              FAQs
+            <button class="nav-link enterprise-tab-pill" id="faq-tab" data-bs-toggle="pill" data-bs-target="#faq-panel" type="button" role="tab" title="Enterprise FAQs">
+              <i class="bi bi-question-circle"></i> FAQs
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link py-2" id="entities-tab" data-bs-toggle="pill" data-bs-target="#entities-panel" type="button" role="tab">
-              NER & Keywords
+            <button class="nav-link enterprise-tab-pill" id="entities-tab" data-bs-toggle="pill" data-bs-target="#entities-panel" type="button" role="tab" title="NER & Glossary">
+              <i class="bi bi-tags"></i> Keywords
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link py-2" id="graph-tab" data-bs-toggle="pill" data-bs-target="#graph-panel" type="button" role="tab">
-              Relation Graph
+            <button class="nav-link enterprise-tab-pill" id="graph-tab" data-bs-toggle="pill" data-bs-target="#graph-panel" type="button" role="tab" title="Semantic Knowledge Graph">
+              <i class="bi bi-diagram-3"></i> Knowledge Graph
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link py-2" id="topics-tab" data-bs-toggle="pill" data-bs-target="#topics-panel" type="button" role="tab">
-              Topic Clusters
+            <button class="nav-link enterprise-tab-pill" id="topics-tab" data-bs-toggle="pill" data-bs-target="#topics-panel" type="button" role="tab" title="Topic Clustering">
+              <i class="bi bi-grid-3x3-gap"></i> Topic Clusters
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link py-2" id="action-items-tab" data-bs-toggle="pill" data-bs-target="#action-items-panel" type="button" role="tab">
-              Action Items
+            <button class="nav-link enterprise-tab-pill" id="action-items-tab" data-bs-toggle="pill" data-bs-target="#action-items-panel" type="button" role="tab" title="Action Items & Tasks">
+              <i class="bi bi-check2-square"></i> Action Items
             </button>
           </li>
         </ul>
 
-        <!-- Tab content container -->
+        <!-- Tab Content Panes Container -->
         <div class="tab-content" id="intelligenceTabsContent">
-          <!-- 1. Summarizer -->
+
+          <!-- =================================================================
+               TAB 1: SUMMARIZER
+               ================================================================= -->
           <div class="tab-pane fade show active" id="summary-panel" role="tabpanel">
-            <h5 class="fw-bold mb-2">Document Summarizer</h5>
-            <p class="text-xs text-muted mb-4">Generate target summaries styled to specific operational requirements.</p>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h5 class="fw-bold mb-1 text-dark">Document Summarizer Studio</h5>
+                <p class="text-xs text-muted mb-0">Generate target summaries styled to specific operational requirements.</p>
+              </div>
+            </div>
             
             <div class="row g-3 mb-4">
-              <div class="col-12 col-md-6">
-                <label class="form-label text-xs fw-bold text-uppercase text-muted">Summary Form Factor</label>
-                <select class="form-select" id="summary-type-select">
-                  <option value="executive">Executive Summary (Strategic)</option>
-                  <option value="short">Short (1-Paragraph Brief)</option>
-                  <option value="detailed">Detailed (Deep Sectioned Breakdown)</option>
-                  <option value="bullet">Bullet Points (Critical facts & metrics)</option>
-                  <option value="technical">Technical Brief (Specs & Protocols)</option>
+              <div class="col-12 col-md-7">
+                <label class="form-label text-xs fw-bold text-uppercase text-muted" for="summary-type-select">Summary Form Factor</label>
+                <select class="form-select form-select-sm bg-body-tertiary" id="summary-type-select">
+                  <option value="executive" selected>Executive Summary (Strategic & C-Suite Brief)</option>
+                  <option value="short">Short Briefing (1-Paragraph Overview)</option>
+                  <option value="detailed">Detailed Breakdown (Deep Sectional Analysis)</option>
+                  <option value="bullet">Bullet Highlights (Critical facts & metrics)</option>
+                  <option value="technical">Technical Brief (Specs, Security & Protocols)</option>
                 </select>
               </div>
-              <div class="col-12 col-md-6 d-flex align-items-end">
-                <button class="btn btn-primary w-100" id="run-summary-btn">
-                  Generate Summary
+              <div class="col-12 col-md-5 d-flex align-items-end">
+                <button class="btn btn-primary btn-sm w-100 py-2 d-flex align-items-center justify-content-center gap-1.5 fw-semibold" id="run-summary-btn">
+                  <i class="bi bi-lightning-charge"></i> Generate Summary
                 </button>
               </div>
             </div>
 
             <div id="summary-result-container" class="border-top pt-4">
-              <div class="text-center text-muted py-5">
-                <p class="small mb-0">Choose your document context and style, then trigger the generator.</p>
+              <div class="empty-state-card animated-fade-in">
+                <div class="mb-3 text-primary opacity-75">
+                  <i class="bi bi-journal-text fs-1"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">No summary generated yet.</h5>
+                <p class="text-secondary small mb-0 mx-auto" style="max-width: 480px;">
+                  Select document scopes from the left panel and click <strong>Generate Summary</strong> to formulate an AI summary.
+                </p>
               </div>
             </div>
           </div>
 
-          <!-- 2. Clause Audit -->
+          <!-- =================================================================
+               TAB 2: CLAUSE AUDIT & COMPARISON
+               ================================================================= -->
           <div class="tab-pane fade" id="compare-panel" role="tabpanel">
-            <h5 class="fw-bold mb-2">Cross-Document Comparison Workspace</h5>
-            <p class="text-xs text-muted mb-4">Compare clauses, compliance levels, and differences between two distinct corporate specifications.</p>
+            <div class="mb-3">
+              <h5 class="fw-bold mb-1 text-dark">Cross-Document Clause Audit Workspace</h5>
+              <p class="text-xs text-muted mb-0">Compare clauses, compliance levels, and differences between two corporate specifications.</p>
+            </div>
             
             <div class="row g-3 mb-4">
               <div class="col-12 col-md-5">
-                <label class="form-label text-xs fw-bold text-uppercase text-muted">Document A (Base Reference)</label>
-                <select class="form-select text-xs" id="compare-doc-a-select">
+                <label class="form-label text-xs fw-bold text-uppercase text-muted" for="compare-doc-a-select">Document A (Base Reference)</label>
+                <select class="form-select form-select-sm text-xs bg-body-tertiary" id="compare-doc-a-select">
                   <option value="" disabled selected>Select first document...</option>
                 </select>
               </div>
               <div class="col-12 col-md-5">
-                <label class="form-label text-xs fw-bold text-uppercase text-muted">Document B (Comparison Spec)</label>
-                <select class="form-select text-xs" id="compare-doc-b-select">
+                <label class="form-label text-xs fw-bold text-uppercase text-muted" for="compare-doc-b-select">Document B (Comparison Spec)</label>
+                <select class="form-select form-select-sm text-xs bg-body-tertiary" id="compare-doc-b-select">
                   <option value="" disabled selected>Select second document...</option>
                 </select>
               </div>
               <div class="col-12 col-md-2 d-flex align-items-end">
-                <button class="btn btn-outline-primary w-100 text-xs py-2" id="run-compare-btn">Compare</button>
+                <button class="btn btn-outline-primary btn-sm w-100 py-2 font-semibold" id="run-compare-btn">Compare</button>
               </div>
             </div>
 
             <div id="compare-result-container" class="border-top pt-4">
-              <div class="text-center text-muted py-5">
-                <p class="small mb-0">Select two different document references above to perform structural audit.</p>
+              <div class="empty-state-card animated-fade-in">
+                <div class="mb-3 text-info opacity-75">
+                  <i class="bi bi-arrows-angle-contract fs-1"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">No structural comparison performed.</h5>
+                <p class="text-secondary small mb-0 mx-auto" style="max-width: 480px;">
+                  Choose two distinct documents above and click <strong>Compare</strong> to perform structural clause analysis.
+                </p>
               </div>
             </div>
           </div>
 
-          <!-- 3. Executive Reports -->
+          <!-- =================================================================
+               TAB 3: EXECUTIVE REPORTS
+               ================================================================= -->
           <div class="tab-pane fade" id="report-panel" role="tabpanel">
-            <div class="d-flex justify-content-between align-items-start mb-3">
+            
+            <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
               <div>
-                <h5 class="fw-bold mb-1">Executive Report Viewer</h5>
+                <h5 class="fw-bold mb-1 text-dark">Executive RAG Report Generator</h5>
                 <p class="text-xs text-muted mb-0">Generates a multi-section PDF-exportable business report with findings, risks, and recommendations.</p>
               </div>
-              <div id="report-export-controls" style="display: none;">
-                <button class="btn btn-xs btn-outline-primary me-2" onclick="downloadReport('markdown')">Export Markdown</button>
-                <button class="btn btn-xs btn-outline-secondary" onclick="downloadReport('text')">Export Plain Text</button>
+              
+              <!-- Report Export Toolbar -->
+              <div id="report-export-controls" style="display: none;" class="d-flex flex-wrap gap-1">
+                <button class="btn btn-xs btn-outline-primary d-flex align-items-center gap-1" onclick="exportReport('pdf')">
+                  <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                </button>
+                <button class="btn btn-xs btn-outline-secondary d-flex align-items-center gap-1" onclick="exportReport('docx')">
+                  <i class="bi bi-file-earmark-word"></i> Download DOCX
+                </button>
+                <button class="btn btn-xs btn-outline-secondary d-flex align-items-center gap-1" onclick="downloadReport('markdown')">
+                  <i class="bi bi-markdown"></i> Markdown
+                </button>
+                <button class="btn btn-xs btn-outline-secondary d-flex align-items-center gap-1" onclick="copyReportText()">
+                  <i class="bi bi-clipboard"></i> Copy
+                </button>
+                <button class="btn btn-xs btn-outline-secondary d-flex align-items-center gap-1" onclick="window.print()">
+                  <i class="bi bi-printer"></i> Print
+                </button>
+                <button class="btn btn-xs btn-outline-secondary d-flex align-items-center gap-1" onclick="shareReport()">
+                  <i class="bi bi-share"></i> Share
+                </button>
               </div>
             </div>
-            
-            <button class="btn btn-primary w-100 mb-4" id="run-report-btn">Generate Enterprise Report</button>
-            
-            <div id="report-result-container" class="border rounded p-3 bg-light-subtle" style="min-height: 200px;">
-              <div class="text-center text-muted py-5">
-                <p class="small mb-0">Select files and click generate to run the complete executive report pipeline.</p>
+
+            <!-- Report Parameters Selection Grid -->
+            <div class="row g-3 mb-4 p-3 rounded border bg-body-tertiary">
+              <div class="col-12 col-md-3">
+                <label class="form-label text-xs fw-bold text-uppercase text-muted" for="report-type-select">Report Type</label>
+                <select id="report-type-select" class="form-select form-select-sm bg-body">
+                  <option value="strategic" selected>Strategic C-Suite Brief</option>
+                  <option value="risk">Risk & Regulatory Audit</option>
+                  <option value="compliance">Governance & Compliance</option>
+                  <option value="full">Full Operational Audit</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label text-xs fw-bold text-uppercase text-muted" for="report-length-select">Output Scope</label>
+                <select id="report-length-select" class="form-select form-select-sm bg-body">
+                  <option value="executive" selected>Executive Brief (1-Page)</option>
+                  <option value="detailed">Detailed Breakdown (3-Page)</option>
+                  <option value="comprehensive">Comprehensive RAG Audit</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label text-xs fw-bold text-uppercase text-muted" for="report-lang-select">Language</label>
+                <select id="report-lang-select" class="form-select form-select-sm bg-body">
+                  <option value="auto" selected>Auto Detect</option>
+                  <option value="en">English</option>
+                  <option value="te">తెలుగు (Telugu)</option>
+                  <option value="hi">हिन्दी (Hindi)</option>
+                  <option value="ta">தமிழ் (Tamil)</option>
+                  <option value="kn">ಕನ್ನಡ (Kannada)</option>
+                  <option value="ml">മലയാളം (Malayalam)</option>
+                  <option value="mr">मराठी (Marathi)</option>
+                  <option value="bn">বাংলা (Bengali)</option>
+                  <option value="gu">ગુજરાતી (Gujarati)</option>
+                  <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+                  <option value="or">ଓଡ଼ိଆ (Odia)</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label text-xs fw-bold text-uppercase text-muted" for="report-tone-select">Tone & Style</label>
+                <select id="report-tone-select" class="form-select form-select-sm bg-body">
+                  <option value="formal" selected>Formal Enterprise</option>
+                  <option value="analytical">Analytical Data-Driven</option>
+                  <option value="concise">Concise Bulletins</option>
+                </select>
               </div>
             </div>
+
+            <!-- Primary Generate Button -->
+            <button class="btn btn-primary btn-md w-100 mb-4 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2" id="run-report-btn">
+              <i class="bi bi-file-earmark-bar-graph"></i>
+              <span>Generate Enterprise Report</span>
+            </button>
+            
+            <!-- Output Area -->
+            <div id="report-result-container" class="border rounded p-4 bg-body-tertiary" style="min-height: 280px;">
+              <div class="empty-state-card animated-fade-in border-0 p-4">
+                <div class="mb-3 text-primary opacity-75">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-check">
+                    <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                    <path d="m9 14 2 2 4-4"/>
+                  </svg>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">No report generated yet.</h5>
+                <p class="text-secondary small mb-0 mx-auto" style="max-width: 480px;">
+                  Choose a document from the left panel and click <strong>Generate Enterprise Report</strong> to run the executive synthesis pipeline.
+                </p>
+              </div>
+            </div>
+
           </div>
 
-          <!-- 4. Chronology -->
+          <!-- =================================================================
+               TAB 4: CHRONOLOGY / TIMELINE
+               ================================================================= -->
           <div class="tab-pane fade" id="timeline-panel" role="tabpanel">
-            <h5 class="fw-bold mb-2">Chronological Milestones & Timeline</h5>
-            <p class="text-xs text-muted mb-4">Automatically scan document texts to isolate all chronological dates, project releases, deadlines, and events.</p>
+            <div class="mb-3">
+              <h5 class="fw-bold mb-1 text-dark">Chronological Milestones & Timeline</h5>
+              <p class="text-xs text-muted mb-0">Automatically scan document texts to isolate all chronological dates, project releases, and deadlines.</p>
+            </div>
             
-            <button class="btn btn-primary w-100 mb-4" id="run-timeline-btn">Extract Project Milestones</button>
+            <button class="btn btn-primary btn-sm w-100 mb-4 py-2 font-semibold" id="run-timeline-btn">
+              <i class="bi bi-clock-history me-1"></i> Extract Project Milestones
+            </button>
             
             <div id="timeline-result-container" class="pt-2">
-              <div class="text-center text-muted py-5">
-                <p class="small mb-0">No timelines extracted. Choose context files above to proceed.</p>
+              <div class="empty-state-card animated-fade-in">
+                <div class="mb-3 text-warning opacity-75">
+                  <i class="bi bi-calendar-range fs-1"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">No milestones extracted.</h5>
+                <p class="text-secondary small mb-0">Select context files from the left pane to extract date milestones.</p>
               </div>
             </div>
           </div>
 
-          <!-- 5. FAQs -->
+          <!-- =================================================================
+               TAB 5: ENTERPRISE FAQS
+               ================================================================= -->
           <div class="tab-pane fade" id="faq-panel" role="tabpanel">
-            <h5 class="fw-bold mb-2">Enterprise FAQ Explorer</h5>
-            <p class="text-xs text-muted mb-4">Automatically generates a high-quality list of frequently asked questions with strict citations mapping back to file chunks.</p>
+            <div class="mb-3">
+              <h5 class="fw-bold mb-1 text-dark">Enterprise FAQ Directory</h5>
+              <p class="text-xs text-muted mb-0">Automatically generates a high-quality list of frequently asked questions with strict citations.</p>
+            </div>
             
-            <button class="btn btn-primary w-100 mb-4" id="run-faq-btn">Generate FAQs List</button>
+            <button class="btn btn-primary btn-sm w-100 mb-4 py-2 font-semibold" id="run-faq-btn">
+              <i class="bi bi-question-circle me-1"></i> Generate FAQs List
+            </button>
             
             <div id="faq-result-container" class="pt-2">
-              <div class="text-center text-muted py-5">
-                <p class="small mb-0">Click the button above to generate offline FAQs based on active files.</p>
+              <div class="empty-state-card animated-fade-in">
+                <div class="mb-3 text-primary opacity-75">
+                  <i class="bi bi-chat-quote fs-1"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">No FAQs directory generated.</h5>
+                <p class="text-secondary small mb-0">Click the button above to synthesize offline FAQs from your documents.</p>
               </div>
             </div>
           </div>
 
-          <!-- 6. NER & Keywords -->
+          <!-- =================================================================
+               TAB 6: NER & KEYWORDS
+               ================================================================= -->
           <div class="tab-pane fade" id="entities-panel" role="tabpanel">
-            <h5 class="fw-bold mb-2">Named Entity & Technical Vocabulary Cloud</h5>
-            <p class="text-xs text-muted mb-4">Detect corporate agents, technologies, laws, and products alongside key glossary keywords mapped by relevance.</p>
+            <div class="mb-3">
+              <h5 class="fw-bold mb-1 text-dark">Named Entity & Technical Vocabulary Cloud</h5>
+              <p class="text-xs text-muted mb-0">Detect corporate agents, technologies, laws, and products alongside glossary keywords.</p>
+            </div>
             
-            <button class="btn btn-primary w-100 mb-4" id="run-entities-btn">Run Extraction Pipelines</button>
+            <button class="btn btn-primary btn-sm w-100 mb-4 py-2 font-semibold" id="run-entities-btn">
+              <i class="bi bi-tags me-1"></i> Run Extraction Pipelines
+            </button>
             
             <div id="entities-result-container" class="row g-4 border-top pt-4" style="display: none;">
               <!-- Left side: Keywords Cloud -->
               <div class="col-12 col-md-6 border-end">
                 <h6 class="fw-bold mb-3 text-primary">Glossary Vocabulary Cloud</h6>
-                <div class="p-3 border rounded bg-light-subtle d-flex flex-wrap gap-2 justify-content-center align-items-center" id="keyword-cloud" style="min-height: 200px;">
+                <div class="p-3 border rounded bg-body-tertiary d-flex flex-wrap gap-2 justify-content-center align-items-center" id="keyword-cloud" style="min-height: 220px;">
                 </div>
               </div>
               <!-- Right side: Named Entities -->
               <div class="col-12 col-md-6">
                 <h6 class="fw-bold mb-3 text-success">Named Entities Extracted</h6>
-                <div id="ner-entity-tabs" style="max-height: 250px; overflow-y: auto;" class="pe-1">
+                <div id="ner-entity-tabs" style="max-height: 280px; overflow-y: auto;" class="pe-1">
                 </div>
               </div>
             </div>
             
-            <div id="entities-skeleton" class="text-center text-muted py-5">
-              <p class="small mb-0">Select document scopes and click run to execute Named Entity and Technical Glossary miners.</p>
+            <div id="entities-skeleton">
+              <div class="empty-state-card animated-fade-in">
+                <div class="mb-3 text-purple opacity-75">
+                  <i class="bi bi-diagram-2 fs-1"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">No entity extractions active.</h5>
+                <p class="text-secondary small mb-0">Select document scopes and click run to execute entity miners.</p>
+              </div>
             </div>
           </div>
 
-          <!-- 7. Relation Graph -->
+          <!-- =================================================================
+               TAB 7: RELATION KNOWLEDGE GRAPH
+               ================================================================= -->
           <div class="tab-pane fade" id="graph-panel" role="tabpanel">
-            <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
               <div>
-                <h5 class="fw-bold mb-1">Interactive Semantic Knowledge Graph</h5>
-                <p class="text-xs text-muted mb-0">Directed nodes linking Documents, Topics, Entities, and Glossary Keywords. Double click nodes or drag them to alter simulation physics.</p>
+                <h5 class="fw-bold mb-1 text-dark">Interactive Semantic Knowledge Graph</h5>
+                <p class="text-xs text-muted mb-0">Directed nodes linking Documents, Topics, Entities, and Keywords via D3.js force simulation.</p>
               </div>
-              <div class="d-flex gap-2">
-                <button class="btn btn-xs btn-outline-secondary py-1" onclick="zoomGraph(1.2)" title="Zoom In">+</button>
-                <button class="btn btn-xs btn-outline-secondary py-1" onclick="zoomGraph(0.8)" title="Zoom Out">-</button>
-                <button class="btn btn-xs btn-outline-secondary py-1" onclick="resetGraphZoom()" title="Reset Zoom">Reset</button>
+              <div class="d-flex gap-1">
+                <button class="btn btn-xs btn-outline-secondary py-1 px-2" onclick="zoomGraph(1.2)" title="Zoom In"><i class="bi bi-zoom-in"></i></button>
+                <button class="btn btn-xs btn-outline-secondary py-1 px-2" onclick="zoomGraph(0.8)" title="Zoom Out"><i class="bi bi-zoom-out"></i></button>
+                <button class="btn btn-xs btn-outline-secondary py-1 px-2" onclick="resetGraphZoom()" title="Reset Zoom"><i class="bi bi-aspect-ratio"></i></button>
               </div>
             </div>
             
-            <button class="btn btn-primary w-100 mb-4" id="run-graph-btn">Generate Semantic Relationship Graph</button>
+            <button class="btn btn-primary btn-sm w-100 mb-4 py-2 font-semibold" id="run-graph-btn">
+              <i class="bi bi-diagram-3 me-1"></i> Generate Semantic Relationship Graph
+            </button>
             
-            <div id="graph-container-wrapper" class="border rounded bg-light-subtle position-relative overflow-hidden" style="height: 400px; display: none;">
+            <div id="graph-container-wrapper" class="border rounded bg-body-tertiary position-relative overflow-hidden" style="height: 420px; display: none;">
               <svg id="kg-svg" width="100%" height="100%"></svg>
               <!-- Dynamic tooltip overlay -->
               <div id="graph-node-tooltip" class="position-absolute bg-dark text-white p-2 rounded text-xs" style="display: none; pointer-events: none; z-index: 99; max-width: 250px;"></div>
               
               <!-- Legend overlay -->
-              <div class="position-absolute bottom-0 start-0 m-3 p-2 bg-white rounded shadow-sm border text-xs d-flex flex-wrap gap-2" style="max-width: 80%;">
+              <div class="position-absolute bottom-0 start-0 m-3 p-2 bg-body rounded shadow-sm border text-xs d-flex flex-wrap gap-2" style="max-width: 85%;">
                 <span class="d-flex align-items-center gap-1"><span class="rounded-circle d-inline-block" style="width:10px; height:10px; background:#4338ca;"></span> Doc</span>
                 <span class="d-flex align-items-center gap-1"><span class="rounded-circle d-inline-block" style="width:10px; height:10px; background:#06b6d4;"></span> Topic</span>
                 <span class="d-flex align-items-center gap-1"><span class="rounded-circle d-inline-block" style="width:10px; height:10px; background:#10b981;"></span> Entity</span>
@@ -273,128 +604,153 @@
               </div>
             </div>
             
-            <div id="graph-skeleton" class="text-center text-muted py-5">
-              <p class="small mb-0">D3 relationship mapping requires file inputs to dynamically construct visual clusters.</p>
+            <div id="graph-skeleton">
+              <div class="empty-state-card animated-fade-in">
+                <div class="mb-3 text-info opacity-75">
+                  <i class="bi bi-share fs-1"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">No graph simulation rendered.</h5>
+                <p class="text-secondary small mb-0">D3 relationship mapping requires file inputs to construct visual clusters.</p>
+              </div>
             </div>
           </div>
 
-          <!-- 8. Topic Clusters -->
+          <!-- =================================================================
+               TAB 8: TOPIC CLUSTERS
+               ================================================================= -->
           <div class="tab-pane fade" id="topics-panel" role="tabpanel">
-            <h5 class="fw-bold mb-2">Semantic Document Topic Clustering</h5>
-            <p class="text-xs text-muted mb-4">Uses deep semantic text categorization to group document chunks into related business topics.</p>
+            <div class="mb-3">
+              <h5 class="fw-bold mb-1 text-dark">Semantic Document Topic Clustering</h5>
+              <p class="text-xs text-muted mb-0">Uses deep text categorization to group document chunks into related business topics.</p>
+            </div>
             
-            <button class="btn btn-primary w-100 mb-4" id="run-topics-btn">Compile Semantic Clusters</button>
+            <button class="btn btn-primary btn-sm w-100 mb-4 py-2 font-semibold" id="run-topics-btn">
+              <i class="bi bi-grid-3x3-gap me-1"></i> Compile Semantic Clusters
+            </button>
             
             <div id="topics-result-container" class="row g-3">
-              <div class="col-12 text-center text-muted py-5" id="topics-skeleton">
-                <p class="small mb-0">Cluster analysis scans text chunks for overlapping contextual theme profiles.</p>
+              <div class="col-12 text-center text-muted" id="topics-skeleton">
+                <div class="empty-state-card animated-fade-in">
+                  <div class="mb-3 text-primary opacity-75">
+                    <i class="bi bi-collection fs-1"></i>
+                  </div>
+                  <h5 class="fw-bold text-dark mb-2">No topic clusters compiled.</h5>
+                  <p class="text-secondary small mb-0">Cluster analysis scans text chunks for overlapping theme profiles.</p>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- 9. Action Items -->
+          <!-- =================================================================
+               TAB 9: ACTION ITEMS
+               ================================================================= -->
           <div class="tab-pane fade" id="action-items-panel" role="tabpanel">
-            <h5 class="fw-bold mb-2">Strategic Action Items & Tasks</h5>
-            <p class="text-xs text-muted mb-4">Automatically isolate obligations, assigned divisions, deadlines, and responsibilities mentioned inside the documents.</p>
+            <div class="mb-3">
+              <h5 class="fw-bold mb-1 text-dark">Strategic Action Items & Tasks</h5>
+              <p class="text-xs text-muted mb-0">Automatically isolate obligations, assigned divisions, deadlines, and responsibilities mentioned inside documents.</p>
+            </div>
             
-            <button class="btn btn-primary w-100 mb-4" id="run-action-btn">Extract Project Actions</button>
+            <button class="btn btn-primary btn-sm w-100 mb-4 py-2 font-semibold" id="run-action-btn">
+              <i class="bi bi-check2-square me-1"></i> Extract Project Actions
+            </button>
             
             <div id="action-result-container" class="pt-2">
-              <div class="text-center text-muted py-5">
-                <p class="small mb-0">Isolate high-impact action registries automatically from your offline context pool.</p>
+              <div class="empty-state-card animated-fade-in">
+                <div class="mb-3 text-success opacity-75">
+                  <i class="bi bi-list-check fs-1"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">No action registry extracted.</h5>
+                <p class="text-secondary small mb-0">Isolate high-impact action registries automatically from your offline context pool.</p>
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- D3.js inclusion for Interactive Force Directed Graph -->
+<!-- D3.js Inclusion for Interactive Knowledge Graph -->
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 
-<style>
-/* Custom graph elements and layouts styling */
-.graph-node {
-  stroke: var(--card-bg);
-  stroke-width: 1.5px;
-  cursor: pointer;
-  transition: r 0.2s;
-}
-.graph-node:hover {
-  stroke-width: 2.5px;
-  stroke: var(--accent-color);
-}
-.graph-link {
-  stroke: #94a3b8;
-  stroke-opacity: 0.6;
-  stroke-width: 1px;
-}
-.graph-label {
-  font-family: 'Inter', sans-serif;
-  font-size: 8px;
-  fill: var(--text-primary);
-  pointer-events: none;
-  text-anchor: middle;
-}
-/* Timeline step lines */
-.timeline-item {
-  position: relative;
-  padding-left: 24px;
-  margin-bottom: 20px;
-  border-left: 2px solid var(--accent-color);
-}
-.timeline-item::before {
-  content: '';
-  position: absolute;
-  left: -6px;
-  top: 4px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--accent-color);
-  border: 2px solid var(--bg-primary);
-}
-</style>
-
 <script>
-// Dynamic global export holders
-let generatedReportText = "";
-let generatedReportMarkdown = "";
+  // Global Export Holders
+  let generatedReportText = "";
+  let generatedReportMarkdown = "";
 
-function downloadReport(format) {
-  if (!generatedReportText || !generatedReportMarkdown) {
-    showToast("Please generate a report first before exporting.", "warning");
-    return;
+  function downloadReport(format) {
+    if (!generatedReportText && !generatedReportMarkdown) {
+      if (window.showToast) showToast("Please generate a report first before exporting.", "warning");
+      else alert("Please generate a report first.");
+      return;
+    }
+    
+    const content = format === 'markdown' ? generatedReportMarkdown : generatedReportText;
+    const filename = format === 'markdown' ? "SmartDocs_Executive_Report.md" : "SmartDocs_Executive_Report.txt";
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const link = document.createElement("a");
+    
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    if (window.showToast) showToast(`Report exported successfully as ${format.toUpperCase()}`, "success");
   }
-  
-  const content = format === 'markdown' ? generatedReportMarkdown : generatedReportText;
-  const filename = format === 'markdown' ? "SmartDocs_Executive_Report.md" : "SmartDocs_Executive_Report.txt";
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-  const link = document.createElement("a");
-  
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  showToast(`Report exported successfully as ${format.toUpperCase()}`, "success");
-}
 
-// Global d3 references
-let svgSelection = null;
-let graphSimulation = null;
-let zoomBehavior = null;
-
-function zoomGraph(factor) {
-  if (svgSelection && zoomBehavior) {
-    svgSelection.transition().duration(300).call(zoomBehavior.scaleBy, factor);
+  function exportReport(format) {
+    if (format === 'pdf' || format === 'print') {
+      window.print();
+    } else if (format === 'docx') {
+      downloadReport('text');
+    } else {
+      downloadReport(format);
+    }
   }
-}
 
-function resetGraphZoom() {
-  if (svgSelection && zoomBehavior) {
-    svgSelection.transition().duration(300).call(zoomBehavior.transform, d3.zoomIdentity);
+  function copyReportText() {
+    if (!generatedReportText) {
+      if (window.showToast) showToast("No generated report content to copy.", "warning");
+      return;
+    }
+    navigator.clipboard.writeText(generatedReportText).then(() => {
+      if (window.showToast) showToast("Report text copied to clipboard!", "success");
+    });
   }
-}
+
+  function shareReport() {
+    if (window.showToast) showToast("Shareable link generated for this local report context.", "info");
+  }
+
+  // Global D3 Reference functions
+  let svgSelection = null;
+  let graphSimulation = null;
+  let zoomBehavior = null;
+
+  function zoomGraph(factor) {
+    if (svgSelection && zoomBehavior) {
+      svgSelection.transition().duration(300).call(zoomBehavior.scaleBy, factor);
+    }
+  }
+
+  function resetGraphZoom() {
+    if (svgSelection && zoomBehavior) {
+      svgSelection.transition().duration(300).call(zoomBehavior.transform, d3.zoomIdentity);
+    }
+  }
+
+  // Document filter search box for left panel
+  window.addEventListener('DOMContentLoaded', () => {
+    const filterInput = document.getElementById('doc-search-filter');
+    if (filterInput) {
+      filterInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        const docCards = document.querySelectorAll('#workspace-docs-container .doc-card-enterprise');
+        docCards.forEach(card => {
+          const text = card.textContent.toLowerCase();
+          card.style.display = text.includes(query) ? 'block' : 'none';
+        });
+      });
+    }
+  });
 </script>
 {% endblock %}

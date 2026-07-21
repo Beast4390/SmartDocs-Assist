@@ -11,48 +11,47 @@ class TranslationService:
         self.logger = logging.getLogger("smartdocs.translation")
         # Standard code to language mapping
         self.languages = {
+            "auto": "Auto Detect",
             "en": "English",
-            "hi": "Hindi",
             "te": "Telugu",
+            "hi": "Hindi",
             "ta": "Tamil",
-            "kn": "Kannada"
+            "kn": "Kannada",
+            "ml": "Malayalam",
+            "mr": "Marathi",
+            "bn": "Bengali",
+            "gu": "Gujarati",
+            "pa": "Punjabi",
+            "or": "Odia"
+        }
+        
+        self.native_names = {
+            "auto": "Auto Detect",
+            "en": "English",
+            "te": "తెలుగు (Telugu)",
+            "hi": "हिन्दी (Hindi)",
+            "ta": "தமிழ் (Tamil)",
+            "kn": "ಕನ್ನಡ (Kannada)",
+            "ml": "മലയാളം (Malayalam)",
+            "mr": "मराठी (Marathi)",
+            "bn": "বাংলা (Bengali)",
+            "gu": "ગુજરાતી (Gujarati)",
+            "pa": "ਪੰਜਾਬੀ (Punjabi)",
+            "or": "ଓଡ଼ိଆ (Odia)"
         }
         
         # Robust offline dict mappings for common phrases & fallback translation templates
         self.offline_dict = {
-            "hi": {
-                "hello": "नमस्ते",
-                "yes": "हाँ",
-                "no": "नहीं",
-                "thank you": "धन्यवाद",
-                "unsupported language": "असमर्थित भाषा",
-                "failed to generate rag response": "आरएजी प्रतिक्रिया उत्पन्न करने में विफल",
-                "verified context references": "सत्यापित संदर्भ संदर्भ:",
-                "transcription": "प्रतिलेखन",
-                "answer": "उत्तर",
-                "sources": "स्रोत"
-            },
-            "te": {
-                "hello": "నమస్తే",
-                "yes": "అవును",
-                "no": "లేదు",
-                "thank you": "ధన్యవాదాలు",
-                "unsupported language": "మద్దతు లేని భాష"
-            },
-            "ta": {
-                "hello": "வணக்கம்",
-                "yes": "ஆம்",
-                "no": "இல்லை",
-                "thank you": "நன்றி",
-                "unsupported language": "ஆதரவற்ற மொழி"
-            },
-            "kn": {
-                "hello": "ನಮಸ್ಕಾರ",
-                "yes": "ಹೌದು",
-                "no": "ಇಲ್ಲ",
-                "thank you": "ಧನ್ಯವಾದಗಳು",
-                "unsupported language": "ಬೆಂಬಲವಿಲ್ಲದ ಭಾಷೆ"
-            }
+            "hi": {"hello": "नमस्ते", "yes": "हाँ", "no": "नहीं", "thank you": "धन्यवाद"},
+            "te": {"hello": "నమస్తే", "yes": "అవును", "no": "లేదు", "thank you": "ధన్యవాదాలు"},
+            "ta": {"hello": "வணக்கம்", "yes": "ஆம்", "no": "இல்லை", "thank you": "நன்றி"},
+            "kn": {"hello": "ನಮಸ್ಕಾರ", "yes": "ಹೌದು", "no": "ಇಲ್ಲ", "thank you": "ಧನ್ಯವಾದಗಳು"},
+            "ml": {"hello": "നമസ്കാരം", "yes": "അതെ", "no": "இല്ല", "thank you": "நന്ദി"},
+            "mr": {"hello": "नमस्कार", "yes": "होय", "no": "नाही", "thank you": "धन्यवाद"},
+            "bn": {"hello": "নমস্কার", "yes": "হ্যাঁ", "no": "না", "thank you": "ধন্যবাদ"},
+            "gu": {"hello": "નમસ્તે", "yes": "હા", "no": "ના", "thank you": "આભાર"},
+            "pa": {"hello": "ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ", "yes": "ਹਾਂ", "no": "ਨਹੀਂ", "thank you": "ਧੰਨਵਾਦ"},
+            "or": {"hello": "ନମସ୍କାର", "yes": "ହଁ", "no": "ନାହିଁ", "thank you": "ଧନ୍ୟବାଦ"}
         }
 
     def list_supported_languages(self) -> dict:
@@ -64,29 +63,33 @@ class TranslationService:
     def detect_language(self, text: str) -> str:
         """
         Detects language of the input text offline using script rules and character analyses.
-        Returns the ISO code (e.g. 'hi', 'te', 'ta', 'kn', 'en').
+        Returns the ISO code ('hi', 'te', 'ta', 'kn', 'ml', 'mr', 'bn', 'gu', 'pa', 'or', 'en').
         """
         if not text:
             return "en"
             
-        # Detect based on script block characteristics
-        # Devanagari (Hindi) range: 0800 - 097F
-        # Telugu range: 0C00 - 0C7F
-        # Tamil range: 0B80 - 0BFF
-        # Kannada range: 0C80 - 0CFF
-        
-        counts = {"hi": 0, "te": 0, "ta": 0, "kn": 0, "en": 0}
+        counts = {"hi": 0, "te": 0, "ta": 0, "kn": 0, "ml": 0, "bn": 0, "gu": 0, "pa": 0, "or": 0, "en": 0}
         
         for char in text:
             cp = ord(char)
-            if 0x0900 <= cp <= 0x097F:
+            if 0x0900 <= cp <= 0x097F: # Devanagari (Hindi / Marathi)
                 counts["hi"] += 1
-            elif 0x0C00 <= cp <= 0x0C7F:
+            elif 0x0C00 <= cp <= 0x0C7F: # Telugu
                 counts["te"] += 1
-            elif 0x0B80 <= cp <= 0x0BFF:
+            elif 0x0B80 <= cp <= 0x0BFF: # Tamil
                 counts["ta"] += 1
-            elif 0x0C80 <= cp <= 0x0CFF:
+            elif 0x0C80 <= cp <= 0x0CFF: # Kannada
                 counts["kn"] += 1
+            elif 0x0D00 <= cp <= 0x0D7F: # Malayalam
+                counts["ml"] += 1
+            elif 0x0980 <= cp <= 0x09FF: # Bengali
+                counts["bn"] += 1
+            elif 0x0A80 <= cp <= 0x0AFF: # Gujarati
+                counts["gu"] += 1
+            elif 0x0A00 <= cp <= 0x0A7F: # Gurmukhi (Punjabi)
+                counts["pa"] += 1
+            elif 0x0B00 <= cp <= 0x0B7F: # Odia
+                counts["or"] += 1
             elif char.isalnum():
                 counts["en"] += 1
                 

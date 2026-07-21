@@ -1,90 +1,73 @@
 {% extends "base.html" %}
 
 {% block content %}
-<style>
-  .chat-bubble {
-    max-width: 80%;
-    margin-bottom: 1rem;
-    padding: 1rem;
-    border-radius: 12px;
-    animation: fadeIn 0.25s ease;
-  }
-  .chat-bubble.user {
-    background-color: var(--primary-color, #0d6efd);
-    color: white;
-    margin-left: auto;
-    border-bottom-right-radius: 2px;
-  }
-  .chat-bubble.assistant {
-    background-color: white;
-    color: var(--text-color, #212529);
-    margin-right: auto;
-    border-bottom-left-radius: 2px;
-    border: 1px solid rgba(0,0,0,0.08);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-  }
-  .action-btn {
-    opacity: 0.6;
-    transition: opacity 0.2s;
-    cursor: pointer;
-  }
-  .action-btn:hover {
-    opacity: 1;
-    color: var(--primary-color);
-  }
-  .citation-link {
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  .citation-link:hover {
-    background-color: var(--primary-color) !important;
-    color: white !important;
-  }
-  @keyframes pulse-dot {
-    0%, 100% { opacity: 0.3; transform: scale(0.8); }
-    50% { opacity: 1; transform: scale(1.2); }
-  }
-  .pulse-dot {
-    width: 6px;
-    height: 6px;
-    background-color: currentColor;
-    border-radius: 50%;
-    display: inline-block;
-    animation: pulse-dot 1.2s infinite ease-in-out;
-  }
-  .pulse-dot:nth-child(2) { animation-delay: 0.2s; }
-  .pulse-dot:nth-child(3) { animation-delay: 0.4s; }
-</style>
+<div class="animated-fade-in chat-wrapper">
 
-<div class="animated-fade-in">
-  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-    <div>
-      <h2 class="fw-bold tracking-tight mb-1">Local AI RAG Assistant</h2>
-      <p class="text-secondary mb-0">Query corporate facts offline with Ollama generative LLM parameters.</p>
+  <!-- Top Control Toolbar -->
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-3 gap-2 border-bottom pb-2.5">
+    <div class="d-flex align-items-center gap-2.5">
+      <div class="p-2 rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+        <i class="bi bi-robot fs-5"></i>
+      </div>
+      <div>
+        <div class="d-flex align-items-center gap-2">
+          <h4 class="fw-bold tracking-tight mb-0 fs-5 text-dark">SmartDocs Copilot</h4>
+          <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-0.5 font-mono text-xs" id="chat-ollama-badge">
+            <i class="bi bi-circle-fill text-warning me-1" style="font-size: 0.45rem;"></i> Connecting...
+          </span>
+        </div>
+        <p class="text-secondary text-xs mb-0">Air-gapped generative LLM RAG engine with FAISS vector retrieval.</p>
+      </div>
     </div>
     
-    <!-- Controls next to model selection -->
-    <div class="d-flex gap-2 flex-wrap align-items-center">
+    <!-- Controls Toolbar -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
       <!-- Clear Chat Button -->
-      <button class="btn btn-sm btn-outline-danger px-3 fw-medium d-flex align-items-center gap-1" id="clear-chat-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-        Clear History
+      <button class="btn btn-xs btn-outline-danger rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1" id="clear-chat-btn" title="Clear Chat History">
+        <i class="bi bi-trash"></i> Clear History
       </button>
 
+      <!-- Export Chat Button -->
+      <button class="btn btn-xs btn-outline-secondary rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1" id="export-chat-btn" title="Export Conversation">
+        <i class="bi bi-download"></i> Export Chat
+      </button>
+
+      <!-- Settings Link -->
+      <a href="/settings" class="btn btn-xs btn-outline-secondary rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1" title="Settings">
+        <i class="bi bi-gear"></i> Settings
+      </a>
+
+      <!-- Language selection dropdown -->
+      <div style="min-width: 155px;">
+        <select class="form-select form-select-sm bg-body-tertiary border-secondary-subtle font-sans text-xs py-1" id="chat-language-select" title="Target Language">
+          <option value="auto" selected>Auto Detect</option>
+          <option value="en">English</option>
+          <option value="te">తెలుగు (Telugu)</option>
+          <option value="hi">हिन्दी (Hindi)</option>
+          <option value="ta">தமிழ் (Tamil)</option>
+          <option value="kn">ಕನ್ನಡ (Kannada)</option>
+          <option value="ml">മലയാളം (Malayalam)</option>
+          <option value="mr">मराठी (Marathi)</option>
+          <option value="bn">বাংলা (Bengali)</option>
+          <option value="gu">ગુજરાતી (Gujarati)</option>
+          <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+          <option value="or">ଓଡ଼ିଆ (Odia)</option>
+        </select>
+      </div>
+
       <!-- Top-K selector -->
-      <div style="width: 130px;">
-        <select class="form-select form-select-sm bg-white" id="chat-top-k-select" title="Top-K context chunks limit">
+      <div style="width: 125px;">
+        <select class="form-select form-select-sm bg-body-tertiary border-secondary-subtle font-mono text-xs py-1" id="chat-top-k-select" title="Top-K context chunks limit">
           <option value="3">Top 3 Chunks</option>
           <option value="5" selected>Top 5 Chunks</option>
           <option value="10">Top 10 Chunks</option>
           <option value="15">Top 15 Chunks</option>
-          <option value="20">Top 20 Chunks</option>
         </select>
       </div>
 
       <!-- Model selection dropdown -->
-      <div style="min-width: 150px;">
-        <select class="form-select form-select-sm bg-white fw-medium" id="chat-model-select" title="Active Generative Model">
+      <div style="min-width: 140px;">
+        <select class="form-select form-select-sm bg-body-tertiary border-secondary-subtle fw-semibold font-mono text-xs py-1" id="chat-model-select" title="Active Generative Model">
           <option value="llama3">LLAMA 3 (8B)</option>
           <option value="qwen3">QWEN 3 (7B)</option>
           <option value="mistral">MISTRAL (7B)</option>
@@ -93,44 +76,84 @@
     </div>
   </div>
 
-  <div class="row g-4">
-    <div class="col-12 col-lg-9">
-      <div class="card glass-panel chat-window p-0 overflow-hidden d-flex flex-column" style="height: 60vh; min-height: 500px;">
-        <!-- Scrollable Chat Bubble Area -->
-        <div class="chat-history p-4 flex-grow-1 overflow-y-auto" id="chat-history" style="background-color: var(--light-bg, #f8f9fa);">
-          <div class="chat-bubble assistant">
-            <div style="font-size: 0.95rem;">
-              Hello! I am your 100% offline <strong>SmartDocs Assistant</strong>. 
-              Ask me anything about your uploaded corporate documents. I will retrieve context 
-              from your FAISS local vector indices before formulating a synthesized response.
+  <!-- Main 2-Column Split Layout (75% Chat / 25% Knowledge Panel) -->
+  <div class="row g-3">
+    <!-- LEFT (75%): Full Width & Height Chat Window -->
+    <div class="col-12 col-xl-9">
+      <div class="card glass-panel chat-window p-0 overflow-hidden d-flex flex-column" style="height: calc(100vh - 175px); min-height: 540px;">
+        
+        <!-- Scrollable Chat History Area -->
+        <div class="chat-history p-3.5 flex-grow-1 overflow-y-auto" id="chat-history" style="background-color: var(--bg-primary);">
+          <!-- Welcome Hero Card when chat starts -->
+          <div class="welcome-card card glass-card p-4 text-center mx-auto my-3 border-0 shadow-sm" style="max-width: 680px; background: var(--bg-secondary);">
+            <div class="icon-square bg-primary-subtle text-primary rounded-circle mx-auto mb-3" style="width: 54px; height: 54px;">
+              <i class="bi bi-robot fs-3"></i>
+            </div>
+            <h5 class="fw-bold text-dark mb-1 fs-5">Welcome to SmartDocs Copilot</h5>
+            <p class="text-secondary text-xs mb-3">Ask factual questions about your uploaded documents. Responses are strictly synthesized offline using local vector embeddings.</p>
+
+            <!-- Clickable Suggested Prompts Chips -->
+            <div class="text-start mb-3">
+              <small class="text-muted text-xs fw-semibold text-uppercase tracking-wider d-block mb-2 text-center">Suggested Questions</small>
+              <div class="d-flex flex-wrap justify-content-center gap-2">
+                <button class="prompt-chip" onclick="applySuggestedPrompt('Summarize Employee Handbook')">
+                  <i class="bi bi-file-earmark-text text-primary"></i> Summarize Employee Handbook
+                </button>
+                <button class="prompt-chip" onclick="applySuggestedPrompt('List Leave Policies')">
+                  <i class="bi bi-calendar-event text-success"></i> List Leave Policies
+                </button>
+                <button class="prompt-chip" onclick="applySuggestedPrompt('Show Hardware Specifications')">
+                  <i class="bi bi-cpu text-warning-emphasis"></i> Hardware Specifications
+                </button>
+                <button class="prompt-chip" onclick="applySuggestedPrompt('Explain Security Policy')">
+                  <i class="bi bi-shield-check text-info"></i> Security Policy
+                </button>
+                <button class="prompt-chip" onclick="applySuggestedPrompt('Vacation Rules')">
+                  <i class="bi bi-sun text-orange"></i> Vacation Rules
+                </button>
+                <button class="prompt-chip" onclick="applySuggestedPrompt('Working Hours & Attendance')">
+                  <i class="bi bi-clock text-purple"></i> Working Hours
+                </button>
+                <button class="prompt-chip" onclick="applySuggestedPrompt('Employee Benefits Summary')">
+                  <i class="bi bi-award text-success"></i> Benefits
+                </button>
+              </div>
+            </div>
+
+            <div class="pt-2 border-top text-muted text-xs d-flex align-items-center justify-content-center gap-3 font-mono">
+              <span><kbd class="bg-body-tertiary text-dark border">Enter</kbd> Send</span>
+              <span><kbd class="bg-body-tertiary text-dark border">Shift + Enter</kbd> Newline</span>
             </div>
           </div>
         </div>
 
         <!-- Chat Input Bar -->
-        <div class="p-3 bg-white border-top">
-          <form id="chat-form">
-            <div class="input-group">
-              <button class="btn btn-outline-secondary px-3 d-flex align-items-center justify-content-center" type="button" id="chat-voice-btn" title="Speak Query (Whisper)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="chat-voice-icon" class="text-danger"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+        <div class="p-3 bg-body-secondary border-top">
+          <form id="chat-form" class="m-0">
+            <div class="input-group shadow-sm rounded-3 overflow-hidden bg-white border">
+              <a href="/upload" class="btn btn-light border-end text-muted d-flex align-items-center justify-content-center px-3" title="Attach / Manage Documents">
+                <i class="bi bi-paperclip fs-5"></i>
+              </a>
+              <button class="btn btn-light border-end text-danger d-flex align-items-center justify-content-center px-3" type="button" id="chat-voice-btn" title="Speak Query (Whisper STT)">
+                <i class="bi bi-mic-fill fs-5" id="chat-voice-icon"></i>
               </button>
-              <input type="text" id="chat-input" class="form-control bg-white shadow-none border" placeholder="Ask a factual question about your corporate documents..." autocomplete="off" required>
-              <button class="btn btn-primary px-4 fw-medium" type="submit">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="me-1"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                Ask Assistant
+              <textarea id="chat-input" class="form-control border-0 shadow-none py-2.5 px-3 text-dark font-sans" placeholder="Ask a factual question about your corporate documents..." rows="1" style="resize: none; max-height: 120px; font-size: 0.9rem;" required></textarea>
+              <button class="btn btn-primary px-4 fw-semibold d-flex align-items-center gap-1.5" type="submit">
+                <span>Send</span>
+                <i class="bi bi-send-fill text-xs"></i>
               </button>
             </div>
             
             <!-- Voice assistant helper inline feedback -->
             <div class="justify-content-between align-items-center mt-2 px-1" id="chat-voice-feedback-row" style="display: none !important;">
-              <small class="text-xs text-muted d-flex align-items-center gap-1">
+              <small class="text-xs text-muted d-flex align-items-center gap-1.5">
                 <span class="spinner-grow spinner-grow-sm text-danger" id="chat-voice-spinner" role="status" style="width: 8px; height: 8px; display: none;"></span>
                 <span id="chat-voice-status-text">Recording active... Speak clearly.</span>
               </small>
               <div class="d-flex gap-2">
-                <button class="btn btn-link text-xxs text-decoration-none text-muted p-0" type="button" id="chat-voice-copy-btn">Copy Transcript</button>
-                <span class="text-muted text-xxs">|</span>
-                <button class="btn btn-link text-xxs text-decoration-none text-muted p-0" type="button" id="chat-voice-replay-btn">Replay Last</button>
+                <button class="btn btn-link text-xs text-decoration-none text-muted p-0" type="button" id="chat-voice-copy-btn">Copy Transcript</button>
+                <span class="text-muted text-xs">|</span>
+                <button class="btn btn-link text-xs text-decoration-none text-muted p-0" type="button" id="chat-voice-replay-btn">Replay Last</button>
               </div>
             </div>
           </form>
@@ -138,34 +161,67 @@
       </div>
     </div>
 
-    <!-- Quick Prompt Suggestions Sidebar -->
-    <div class="col-12 col-lg-3">
-      <div class="card glass-panel p-4 h-100 d-flex flex-column">
-        <h6 class="fw-bold text-xs text-uppercase tracking-wider text-muted mb-3">Enterprise Shortcuts</h6>
-        
-        <div class="list-group list-group-flush gap-2 flex-grow-1">
-          <button class="btn btn-sm btn-outline-secondary text-start p-3 rounded" onclick="document.getElementById('chat-input').value = 'Summarize our corporate security policy.';">
-            <div class="fw-bold text-xs mb-1">Security Policy</div>
-            <span class="text-xs text-muted" style="font-size: 0.7rem;">Request bullet-point summarization.</span>
-          </button>
-          
-          <button class="btn btn-sm btn-outline-secondary text-start p-3 rounded" onclick="document.getElementById('chat-input').value = 'Is our server configured with hardware accelerators?';">
-            <div class="fw-bold text-xs mb-1">Server Specifications</div>
-            <span class="text-xs text-muted" style="font-size: 0.7rem;">Query hardware topology.</span>
-          </button>
+    <!-- RIGHT (25%): Knowledge Panel -->
+    <div class="col-12 col-xl-3">
+      <div class="card glass-panel p-3.5 h-100 d-flex flex-column">
+        <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2 border-bottom pb-2">
+          <i class="bi bi-database-gear text-primary fs-5"></i>
+          Knowledge Panel
+        </h6>
 
-          <button class="btn btn-sm btn-outline-secondary text-start p-3 rounded" onclick="document.getElementById('chat-input').value = 'What is the corporate leave policy?';">
-            <div class="fw-bold text-xs mb-1">Leave Guidelines</div>
-            <span class="text-xs text-muted" style="font-size: 0.7rem;">Retrieve regulatory guidelines.</span>
-          </button>
-        </div>
-        
-        <div class="mt-4 p-3 border rounded bg-light-subtle text-xxs text-secondary">
-          <div class="fw-bold text-dark mb-1 d-flex align-items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-success"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Strict Factual Integrity
+        <!-- System Readiness Indicators -->
+        <div class="mb-3">
+          <small class="text-muted text-xs fw-semibold text-uppercase tracking-wider d-block mb-2">System Readiness</small>
+          <div class="d-flex flex-column gap-1.5 text-xs">
+            <div class="d-flex align-items-center justify-content-between p-2 rounded border bg-body-tertiary">
+              <span class="fw-medium text-dark"><i class="bi bi-cpu me-1.5 text-primary"></i> Ollama LLM</span>
+              <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis" id="kb-status-ollama">🟡 Connecting...</span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between p-2 rounded border bg-body-tertiary">
+              <span class="fw-medium text-dark"><i class="bi bi-diagram-3 me-1.5 text-success"></i> Embeddings</span>
+              <span class="badge rounded-pill bg-success-subtle text-success" id="kb-status-embed">🟢 Ready</span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between p-2 rounded border bg-body-tertiary">
+              <span class="fw-medium text-dark"><i class="bi bi-hdd-network me-1.5 text-purple"></i> FAISS Store</span>
+              <span class="badge rounded-pill bg-success-subtle text-success" id="kb-status-faiss">🟢 Ready</span>
+            </div>
           </div>
-          Answers are strictly compiled using context passages in the local FAISS index. Hallucinations are mathematically guarded.
+        </div>
+
+        <!-- Knowledge Base Info Cards -->
+        <div class="mb-3 flex-grow-1">
+          <small class="text-muted text-xs fw-semibold text-uppercase tracking-wider d-block mb-2">Knowledge Metrics</small>
+          <div class="d-flex flex-column gap-2 text-xs">
+            <div class="p-2.5 rounded border bg-body-tertiary">
+              <div class="text-muted mb-0.5">Uploaded Files</div>
+              <strong class="text-dark fs-6 font-mono" id="chat-kb-files">0 Files</strong>
+            </div>
+            <div class="p-2.5 rounded border bg-body-tertiary">
+              <div class="text-muted mb-0.5">Vector Chunks</div>
+              <strong class="text-success fs-6 font-mono" id="chat-kb-chunks">0 Chunks</strong>
+            </div>
+            <div class="p-2.5 rounded border bg-body-tertiary">
+              <div class="text-muted mb-0.5">Active LLM Model</div>
+              <strong class="text-primary font-mono" id="chat-kb-model">LLaMA 3 (8B)</strong>
+            </div>
+            <div class="p-2.5 rounded border bg-body-tertiary">
+              <div class="text-muted mb-0.5">Retrieval Mode</div>
+              <span class="badge bg-primary-subtle text-primary border text-xs">Semantic Top-K RAG</span>
+            </div>
+            <div class="p-2.5 rounded border bg-body-tertiary">
+              <div class="text-muted mb-0.5">Vector Index File</div>
+              <span class="font-mono text-muted text-truncate d-block" id="chat-kb-index" title="/faiss_index/smartdocs.index">/faiss_index/smartdocs.index</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Strict Factual Integrity Banner -->
+        <div class="p-2.5 rounded border bg-success-subtle text-success text-xs mt-auto">
+          <div class="fw-bold mb-1 d-flex align-items-center gap-1">
+            <i class="bi bi-shield-check fs-6"></i>
+            Air-Gapped Privacy Guaranteed
+          </div>
+          <span class="text-muted d-block" style="font-size: 0.72rem;">Answers compiled purely from local vectors. Zero cloud transmission.</span>
         </div>
       </div>
     </div>
@@ -173,10 +229,44 @@
 </div>
 
 <script>
+  function applySuggestedPrompt(text) {
+    const input = document.getElementById('chat-input');
+    if (input) {
+      input.value = text;
+      input.focus();
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
+    // Auto-resize chat textarea
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) {
+      chatInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight < 120 ? this.scrollHeight : 120) + 'px';
+      });
+
+      chatInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+        }
+      });
+    }
+
+    // Export Chat History Button Listener
+    const exportBtn = document.getElementById('export-chat-btn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        if (typeof window.exportChatHistory === 'function') {
+          window.exportChatHistory();
+        }
+      });
+    }
+
+    // Whisper Voice STT Event Listeners
     const voiceBtn = document.getElementById('chat-voice-btn');
     const voiceIcon = document.getElementById('chat-voice-icon');
-    const chatInput = document.getElementById('chat-input');
     const feedbackRow = document.getElementById('chat-voice-feedback-row');
     const spinner = document.getElementById('chat-voice-spinner');
     const statusText = document.getElementById('chat-voice-status-text');
@@ -188,56 +278,56 @@
     let isRecording = false;
     let lastTranscript = "";
 
-    voiceBtn.addEventListener('click', async () => {
-      if (!isRecording) {
-        // Start recording
-        audioChunks = [];
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          mediaRecorder = new MediaRecorder(stream);
-          mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) audioChunks.push(e.data);
-          };
-          mediaRecorder.onstop = async () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-            await transcribeAudio(audioBlob);
-          };
+    if (voiceBtn) {
+      voiceBtn.addEventListener('click', async () => {
+        if (!isRecording) {
+          audioChunks = [];
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = (e) => {
+              if (e.data.size > 0) audioChunks.push(e.data);
+            };
+            mediaRecorder.onstop = async () => {
+              const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+              await transcribeAudio(audioBlob);
+            };
 
-          mediaRecorder.start();
-          isRecording = true;
+            mediaRecorder.start();
+            isRecording = true;
+            
+            voiceBtn.className = 'btn btn-danger px-3 d-flex align-items-center justify-content-center';
+            if (voiceIcon) voiceIcon.className = 'bi bi-stop-circle-fill fs-5 text-white';
+            if (feedbackRow) {
+              feedbackRow.style.display = 'flex';
+              feedbackRow.style.setProperty('display', 'flex', 'important');
+            }
+            if (spinner) spinner.style.display = 'inline-block';
+            if (statusText) statusText.textContent = 'Listening to microphone... Click MIC button to finish.';
+            showToast("Recording started...", "info");
+          } catch (err) {
+            console.error("Mic access denied:", err);
+            showToast("Failed to access microphone. Check browser permissions.", "error");
+          }
+        } else {
+          if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+          }
+          isRecording = false;
           
-          // Update UI
-          voiceBtn.className = 'btn btn-danger px-3 d-flex align-items-center justify-content-center';
-          voiceIcon.style.color = '#ffffff';
-          feedbackRow.style.display = 'flex';
-          feedbackRow.style.setProperty('display', 'flex', 'important');
-          spinner.style.display = 'inline-block';
-          statusText.textContent = 'Listening to your microphone... Click MIC button again to transcribing.';
-          showToast("Recording started...", "info");
-        } catch (err) {
-          console.error("Mic access denied:", err);
-          showToast("Failed to access microphone. Check browser permissions.", "error");
+          voiceBtn.className = 'btn btn-light border-end text-danger d-flex align-items-center justify-content-center px-3';
+          if (voiceIcon) voiceIcon.className = 'bi bi-mic-fill fs-5';
+          if (spinner) spinner.style.display = 'inline-block';
+          if (statusText) statusText.textContent = 'Processing speech with Whisper model...';
         }
-      } else {
-        // Stop recording
-        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-          mediaRecorder.stop();
-          mediaRecorder.stream.getTracks().forEach(track => track.stop());
-        }
-        isRecording = false;
-        
-        // Update UI
-        voiceBtn.className = 'btn btn-outline-secondary px-3 d-flex align-items-center justify-content-center';
-        voiceIcon.style.color = '';
-        spinner.style.display = 'inline-block';
-        statusText.textContent = 'Processing with local Whisper-Tiny model...';
-      }
-    });
+      });
+    }
 
     async function transcribeAudio(blob) {
       const formData = new FormData();
       formData.append('file', blob, 'chat_input.wav');
-      formData.append('target_language', 'English'); // Transcribe to english for standard chat
+      formData.append('target_language', 'English');
 
       try {
         const res = await fetch('/api/voice', {
@@ -248,41 +338,45 @@
         
         if (data.success && data.transcript) {
           lastTranscript = data.transcript;
-          chatInput.value = data.transcript;
-          statusText.textContent = `Speech transcribed completely! Click submit to send.`;
-          spinner.style.display = 'none';
+          if (chatInput) chatInput.value = data.transcript;
+          if (statusText) statusText.textContent = `Transcribed completely! Press Send.`;
+          if (spinner) spinner.style.display = 'none';
           showToast("Voice transcribed completely offline!", "success");
         } else {
-          statusText.textContent = `STT Failed: ${data.error || 'No speech detected'}`;
-          spinner.style.display = 'none';
-          showToast("Whisper could not detect speech. Please try again.", "warning");
+          if (statusText) statusText.textContent = `STT Failed: ${data.error || 'No speech detected'}`;
+          if (spinner) spinner.style.display = 'none';
+          showToast("Whisper could not detect speech. Try again.", "warning");
         }
       } catch (err) {
         console.error("Transcribe error:", err);
-        statusText.textContent = "Error connecting to local Whisper engine.";
-        spinner.style.display = 'none';
+        if (statusText) statusText.textContent = "Error connecting to local Whisper engine.";
+        if (spinner) spinner.style.display = 'none';
       }
     }
 
-    copyBtn.addEventListener('click', () => {
-      const txt = chatInput.value.trim();
-      if (txt) {
-        navigator.clipboard.writeText(txt)
-          .then(() => showToast("Speech transcript copied!", "success"))
-          .catch(() => showToast("Copy failed.", "error"));
-      } else {
-        showToast("Transcript is empty.", "warning");
-      }
-    });
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        const txt = chatInput ? chatInput.value.trim() : '';
+        if (txt) {
+          navigator.clipboard.writeText(txt)
+            .then(() => showToast("Speech transcript copied!", "success"))
+            .catch(() => showToast("Copy failed.", "error"));
+        } else {
+          showToast("Transcript is empty.", "warning");
+        }
+      });
+    }
 
-    replayBtn.addEventListener('click', () => {
-      if (lastTranscript) {
-        chatInput.value = lastTranscript;
-        showToast("Last spoken query loaded.", "success");
-      } else {
-        showToast("No spoken history available.", "warning");
-      }
-    });
+    if (replayBtn) {
+      replayBtn.addEventListener('click', () => {
+        if (lastTranscript && chatInput) {
+          chatInput.value = lastTranscript;
+          showToast("Last spoken query loaded.", "success");
+        } else {
+          showToast("No spoken history available.", "warning");
+        }
+      });
+    }
   });
 </script>
 {% endblock %}

@@ -172,6 +172,8 @@ def upload_file():
 
 
 @upload_bp.route('/documents', methods=['GET'])
+@upload_bp.route('/api/documents', methods=['GET'])
+@upload_bp.route('/api/upload/documents', methods=['GET'])
 @upload_bp.route('/api/upload/list', methods=['GET'])
 def list_uploaded_documents():
     """List all documents currently resting in secure offline uploads directory with loaded metadata."""
@@ -369,6 +371,21 @@ def view_document(filename):
     except Exception as e:
         current_app.logger.error(f"Error in document viewer: {str(e)}")
         return render_template('base.html', error_code=500, error_message=f"Internal error viewing document: {str(e)}"), 500
+
+
+@upload_bp.route('/api/upload/download/<string:filename>', methods=['GET'])
+@upload_bp.route('/document/<string:filename>/download', methods=['GET'])
+def download_uploaded_document(filename):
+    """Securely download original uploaded document from node storage."""
+    from flask import send_from_directory
+    if not validate_safe_filename(filename):
+        return jsonify({'success': False, 'error': 'Unsafe filename.'}), 400
+    safe_name = secure_filename(filename)
+    uploads_dir = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+    file_path = os.path.join(uploads_dir, safe_name)
+    if not validate_path_safety(uploads_dir, file_path) or not os.path.exists(file_path):
+        return jsonify({'success': False, 'error': 'Document file not found.'}), 404
+    return send_from_directory(uploads_dir, safe_name, as_attachment=True)
 
 
 @upload_bp.route('/api/stats', methods=['GET'])

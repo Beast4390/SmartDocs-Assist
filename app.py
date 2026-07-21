@@ -45,7 +45,6 @@ def create_app(config_name=None):
         app.logger.error(f"Critical error pre-loading SentenceTransformer: {str(e)}")
     
     app.embedding_service = embedding_service
-
     # Initialize local FAISS Vector Store
     from services.vector_store import VectorStore
     faiss_index_dir = app.config.get('FAISS_INDEX_FOLDER', 'faiss_index')

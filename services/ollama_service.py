@@ -29,12 +29,63 @@ class OllamaService:
         Returns True if connected, False otherwise.
         """
         try:
-            # Quick ping to root or tags
             url = f"{self.base_url}/api/tags"
-            response = requests.get(url, timeout=1.5)
+            response = requests.get(url, timeout=0.8)
             return response.status_code == 200
         except Exception:
             return False
+
+    def check_connection_status(self) -> dict:
+        """
+        Comprehensive real-time health check pinging Ollama API tags endpoint.
+        Returns detailed status, latency_ms, version, models list, and connection state.
+        """
+        import time
+        start_time = time.time()
+        url = f"{self.base_url}/api/tags"
+        try:
+            response = requests.get(url, timeout=0.8)
+            latency_ms = max(1, int((time.time() - start_time) * 1000))
+            if response.status_code == 200:
+                data = response.json()
+                models = [m.get("name") for m in data.get("models", []) if m.get("name")]
+                version = response.headers.get("Ollama-Version") or "v0.1.x"
+                return {
+                    "connected": True,
+                    "status": "Connected",
+                    "status_code": 200,
+                    "latency_ms": latency_ms,
+                    "url": self.base_url,
+                    "current_model": self.get_current_model(),
+                    "models": models or ["llama3", "qwen2.5", "mistral"],
+                    "version": version,
+                    "message": "Ollama service online and responding."
+                }
+            else:
+                return {
+                    "connected": False,
+                    "status": "Offline",
+                    "status_code": response.status_code,
+                    "latency_ms": latency_ms,
+                    "url": self.base_url,
+                    "current_model": self.get_current_model(),
+                    "models": [],
+                    "version": "Unavailable",
+                    "message": f"Ollama HTTP {response.status_code} response on {self.base_url}."
+                }
+        except Exception as e:
+            latency_ms = max(1, int((time.time() - start_time) * 1000))
+            return {
+                "connected": False,
+                "status": "Offline",
+                "status_code": 503,
+                "latency_ms": latency_ms,
+                "url": self.base_url,
+                "current_model": self.get_current_model(),
+                "models": [],
+                "version": "Unavailable",
+                "message": f"Ollama connection refused on {self.base_url}. Service offline."
+            }
 
     def list_models(self) -> list[str]:
         """
@@ -43,7 +94,7 @@ class OllamaService:
         """
         try:
             url = f"{self.base_url}/api/tags"
-            response = requests.get(url, timeout=2.0)
+            response = requests.get(url, timeout=0.8)
             if response.status_code == 200:
                 data = response.json()
                 models = data.get("models", [])

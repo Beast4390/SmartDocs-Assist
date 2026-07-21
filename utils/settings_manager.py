@@ -1,5 +1,8 @@
 import os
 import json
+import logging
+
+logger = logging.getLogger('smartdocs.settings')
 
 DEFAULT_SETTINGS = {
     "ollama_url": "http://localhost:11434",
@@ -40,4 +43,4 @@ def save_settings(settings: dict):
         with open(path, "w", encoding="utf-8") as f:
             json.dump(settings, f, indent=4, ensure_ascii=False)
     except Exception as e:
-        print(f"Error saving settings: {e}")
+        logger.error(f"Error saving settings: {e}")

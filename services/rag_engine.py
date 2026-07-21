@@ -1,4 +1,5 @@
 import time
+import logging
 from services.vector_store import VectorStore
 from services.embedding_service import EmbeddingService
 from services.ollama_service import OllamaService
@@ -13,6 +14,7 @@ class RAGEngine:
         self.vector_store = vector_store
         self.embedding_service = embedding_service
         self.ollama_service = ollama_service
+        self.logger = logging.getLogger("smartdocs.rag_engine")
 
     def retrieve_context(self, user_message: str, top_k: int = 5) -> list[dict]:
         """
@@ -119,7 +121,8 @@ Answer:"""
                 res = self.ollama_service.generate(model_name, prompt, options)
                 answer = res.get("response", "").strip()
             except Exception as e:
-                answer = f"Error communicating with local Ollama service: {str(e)}"
+                self.logger.error(f"Error communicating with local Ollama service: {str(e)}", exc_info=True)
+                answer = "Ollama is currently offline. Please start the Ollama server and try again. Run: ollama serve"
             generation_time_ms = int((time.time() - generation_start) * 1000)
 
             return {

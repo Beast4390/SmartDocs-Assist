@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 import numpy as np
 from datetime import datetime
 import faiss
@@ -11,6 +12,7 @@ class VectorStore:
     """
     
     def __init__(self, index_folder: str = "faiss_index", embeddings_folder: str = "embeddings"):
+        self.logger = logging.getLogger("smartdocs.vector_store")
         self.index_folder = index_folder
         self.embeddings_folder = embeddings_folder
         self.index = None
@@ -63,7 +65,7 @@ class VectorStore:
             with open(meta_path, "w", encoding="utf-8") as f:
                 json.dump(self.index_metadata, f, indent=4, ensure_ascii=False)
         except Exception as e:
-            print(f"Error saving FAISS index: {str(e)}")
+            self.logger.error(f"Error saving FAISS index: {str(e)}")
 
     def save_metadata(self):
         """Saves only the index metadata file to update stats (e.g. search requests)."""
@@ -72,7 +74,7 @@ class VectorStore:
             with open(meta_path, "w", encoding="utf-8") as f:
                 json.dump(self.index_metadata, f, indent=4, ensure_ascii=False)
         except Exception as e:
-            print(f"Error saving index metadata: {str(e)}")
+            self.logger.error(f"Error saving index metadata: {str(e)}")
 
     def load_index(self) -> bool:
         """Loads serialized index files and mappings from local storage."""
@@ -100,7 +102,7 @@ class VectorStore:
                         self.index_metadata[k] = v
             return True
         except Exception as e:
-            print(f"Error loading FAISS index: {str(e)}")
+            self.logger.error(f"Error loading FAISS index: {str(e)}")
             self.create_index(384)
             self.mapping = []
             return False
@@ -210,7 +212,7 @@ class VectorStore:
                         all_vectors.append(vectors)
                         indexed_doc_ids.add(doc_id)
                     except Exception as rebuild_err:
-                        print(f"Skipping rebuild folder {doc_id} due to read error: {str(rebuild_err)}")
+                        self.logger.warning(f"Skipping rebuild folder {doc_id} due to read error: {str(rebuild_err)}")
 
             if all_vectors:
                 stacked_vectors = np.vstack(all_vectors).astype('float32')
@@ -233,7 +235,7 @@ class VectorStore:
 
             self.save_index()
         except Exception as e:
-            print(f"Critical error rebuilding FAISS index: {str(e)}")
+            self.logger.error(f"Critical error rebuilding FAISS index: {str(e)}")
 
     def get_index_stats(self) -> dict:
         """Retrieves real-time index stats including file size on disk."""

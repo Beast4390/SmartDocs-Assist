@@ -47,6 +47,17 @@ def send_chat_message():
 
     get_ai_logger().info(f"Chat RAG query request - Model: {model}, Top-K: {top_k}, Streaming: {stream}")
 
+    # Pre-flight check: Verify Ollama availability before starting query execution
+    ollama_connected = current_app.ollama_service.check_connection()
+    if not ollama_connected:
+        get_ai_logger().warning(f"Chat request refused: Ollama service node offline at {current_app.ollama_service.base_url}")
+        return jsonify({
+            'success': False,
+            'ollama_connected': False,
+            'error': 'Ollama is currently offline. Please start the Ollama server and try again.',
+            'action_required': 'Run: ollama serve'
+        }), 503
+
     try:
         if stream:
             # Get RAG response configuration with generator stream

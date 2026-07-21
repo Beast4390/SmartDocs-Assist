@@ -1,6 +1,30 @@
 import os
 from flask import current_app
 
+def _doc_matches(target_names, chunk_filename, chunk_doc_id):
+    if not target_names:
+        return True
+    for target in target_names:
+        if not target: continue
+        target_str = str(target).lower()
+        fn_str = str(chunk_filename or '').lower()
+        did_str = str(chunk_doc_id or '').lower()
+        
+        # Exact match on filename or doc_id
+        if target_str == fn_str or target_str == did_str:
+            return True
+        # Strip extension comparisons
+        target_no_ext = os.path.splitext(target_str)[0]
+        fn_no_ext = os.path.splitext(fn_str)[0]
+        if target_no_ext and fn_no_ext and (target_no_ext in fn_no_ext or fn_no_ext in target_no_ext):
+            return True
+        # Strip unique UUID suffix (e.g. e2e_verification_policy_1d28ea86 -> e2e_verification_policy)
+        target_stem = target_no_ext.rsplit('_', 1)[0] if '_' in target_no_ext else target_no_ext
+        fn_stem = fn_no_ext.rsplit('_', 1)[0] if '_' in fn_no_ext else fn_no_ext
+        if target_stem and fn_stem and (target_stem in fn_stem or fn_stem in target_stem):
+            return True
+    return False
+
 def get_context_for_documents(document_names, query=None, top_k=15):
     """
     Retrieves the most semantically relevant text chunks from FAISS for the specified document names.
@@ -40,8 +64,7 @@ def get_context_for_documents(document_names, query=None, top_k=15):
                     filename = r.get('filename')
                     doc_id = r.get('document_id')
                     
-                    # Match by original filename or document_id
-                    if filename in document_names or doc_id in document_names:
+                    if _doc_matches(document_names, filename, doc_id):
                         retrieved_chunks.append(r)
                         if len(retrieved_chunks) >= top_k:
                             break
@@ -54,7 +77,7 @@ def get_context_for_documents(document_names, query=None, top_k=15):
         for chunk in vector_store.mapping:
             filename = chunk.get('filename')
             doc_id = chunk.get('document_id')
-            if filename in document_names or doc_id in document_names:
+            if _doc_matches(document_names, filename, doc_id):
                 # Format to look like search results
                 fallback_chunks.append({
                     "document_id": chunk.get("document_id"),
